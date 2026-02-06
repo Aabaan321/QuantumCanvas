@@ -2,344 +2,423 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>NebulaTouch v4: Refined Core</title>
+    <title>NebulaTouch v3: Refined</title>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Courier New', Courier, monospace; }
+        /* --- VISUAL STYLE: Dark, Clean, Cyberpunk --- */
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            background-color: #020202; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Cleaner font */
+        }
         canvas { display: block; }
         
-        /* MINIMAL UI */
-        #ui-layer {
-            position: absolute; top: 20px; left: 20px;
+        /* Hidden video input (for logic only) */
+        #video-input { position: absolute; top: 0; left: 0; opacity: 0; pointer-events: none; }
+
+        /* --- UI OVERLAY --- */
+        #ui {
+            position: absolute;
+            top: 20px; left: 20px;
+            color: rgba(0, 255, 204, 0.8); /* Slightly transparent text */
             pointer-events: none;
-            color: rgba(255, 255, 255, 0.7);
             z-index: 10;
-        }
-        h1 { margin: 0; font-size: 1rem; letter-spacing: 3px; color: #00ffcc; text-shadow: 0 0 10px rgba(0,255,204,0.5); }
-        p { font-size: 0.8rem; margin: 5px 0; }
-        
-        #status-text {
-            position: absolute; bottom: 30px; left: 50%;
-            transform: translateX(-50%);
-            color: #fff; font-size: 1.2rem;
-            text-shadow: 0 0 10px #00ffcc;
-            opacity: 0.8;
-            pointer-events: none;
+            background: rgba(0, 0, 0, 0.3); /* Darker, more see-through background */
+            padding: 20px;
+            border-left: 2px solid #00ffcc; /* Minimal border */
+            backdrop-filter: blur(2px); /* Subtle blur for readability */
         }
 
-        /* START BUTTON OVERLAY */
-        #start-screen {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9);
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        h1 { 
+            margin: 0; 
+            font-size: 1rem; 
+            font-weight: 300; 
+            text-transform: uppercase; 
+            letter-spacing: 4px; 
+            color: #fff;
+        }
+
+        p { font-size: 0.85rem; margin: 8px 0; opacity: 0.8; }
+        
+        .highlight { color: #fff; font-weight: 600; text-shadow: 0 0 5px rgba(0,255,204,0.5); }
+        
+        .instruction-item { display: flex; align-items: center; margin-bottom: 4px; }
+        .icon { width: 20px; text-align: center; margin-right: 10px; }
+
+        /* --- MODE INDICATOR (Bottom Center) --- */
+        #mode-indicator {
+            position: absolute;
+            bottom: 40px; left: 50%;
+            transform: translateX(-50%);
+            font-size: 1.2rem;
+            color: rgba(255, 255, 255, 0.5);
+            letter-spacing: 2px;
+            pointer-events: none;
+            transition: color 0.3s;
+        }
+        
+        /* Loading Screen */
+        #loader {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            color: #00ffcc; font-size: 1.5rem; letter-spacing: 5px;
+            animation: pulse 1.5s infinite;
             z-index: 100;
         }
-        button {
-            background: transparent; border: 1px solid #00ffcc; color: #00ffcc;
-            padding: 15px 30px; font-size: 1rem; cursor: pointer;
-            font-family: inherit; letter-spacing: 2px;
-            transition: 0.3s;
-        }
-        button:hover { background: #00ffcc; color: #000; box-shadow: 0 0 20px #00ffcc; }
-        
-        #video-input { display: none; }
+
+        @keyframes pulse { 0% { opacity: 0.3; } 50% { opacity: 1; } 100% { opacity: 0.3; } }
     </style>
 </head>
 <body>
 
-    <div id="start-screen">
-        <h1 style="font-size: 2rem; margin-bottom: 20px;">NEBULA TOUCH v4</h1>
-        <p style="color: #aaa; margin-bottom: 30px;">Microphone & Camera Required</p>
-        <button onclick="startSystem()">ACTIVATE SYSTEM</button>
-    </div>
+    <div id="loader">INITIALIZING NEBULA...</div>
 
-    <div id="ui-layer">
-        <h1>GESTURE OS</h1>
-        <p>State: <span id="state-log">Ready</span></p>
-        <p>Mic: <span id="mic-log">Inactive</span></p>
-        <div style="margin-top: 15px; font-size: 0.7rem; opacity: 0.5;">
-            [1 Hand] Rotate / Fist (Chaos) / Point (Trail)<br>
-            [2 Hands] Clap (BlackHole) / Stretch (Warp)<br>
-            [Voice] Speak to Pulse
+    <div id="ui">
+        <h1>NebulaTouch <span style="font-size:0.6em; opacity:0.5">v3</span></h1>
+        <p>STATUS: <span id="mode-text" class="highlight">SHAPE VIEW</span></p>
+        <div style="height: 1px; background: rgba(255,255,255,0.1); margin: 10px 0;"></div>
+        
+        <div id="instructions-shape">
+            <div class="instruction-item"><span class="icon">👋</span> <span><b>Swipe:</b> Morph Shape</span></div>
+            <div class="instruction-item"><span class="icon">🤏</span> <span><b>Pinch:</b> Resize</span></div>
+            <div class="instruction-item"><span class="icon">✋</span> <span><b>Move:</b> Rotate</span></div>
         </div>
+
+        <div id="instructions-draw" style="display:none;">
+            <div class="instruction-item"><span class="icon">👆</span> <span><b>Pinch + Move:</b> Draw 3D</span></div>
+            <div class="instruction-item"><span class="icon">✋</span> <span><b>Release:</b> Stop</span></div>
+        </div>
+        
+        <p style="margin-top:15px; font-size: 0.7rem; color: #666;">
+            [ SYSTEM READY ]<br> Interact with floating orbs to switch modes.
+        </p>
     </div>
 
-    <div id="status-text">WAITING FOR INPUT</div>
-
+    <div id="mode-indicator">WAITING FOR HAND...</div>
     <video id="video-input" playsinline></video>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
 
     <script>
-        // --- SETUP ---
+        // --- 1. SETUP & CONFIG ---
         const CONFIG = {
-            count: 7000, // Slightly fewer for cleaner look
-            particleSize: 0.15, // THIN and elegant
-            camZ: 35
+            particleCount: 5000, // Reduced slightly for smoother mobile performance
+            camZ: 40,
+            swipeThreshold: 0.7,
+            pinchThreshold: 0.06, 
+            smoothFactor: 0.15 // Lower = Smoother cursor, Higher = Faster response
         };
 
-        const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x000000, 0.02);
+        const state = {
+            mode: 'SHAPE', 
+            hand: { x: 0, y: 0, z: 0 },
+            rawHand: { x: 0, y: 0, z: 0 }, // For smoothing
+            velocity: 0,
+            pinchDist: 0.1,
+            isPinching: false,
+            swipeCooldown: 0,
+            currentShapeIdx: 0,
+            systemReady: false
+        };
 
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+        // Scene Setup
+        const scene = new THREE.Scene();
+        // Darker fog for depth
+        scene.fog = new THREE.FogExp2(0x020202, 0.02);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         camera.position.z = CONFIG.camZ;
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setClearColor(0x020202); // Deep black background
         document.body.appendChild(renderer.domElement);
 
-        // --- AUDIO SYSTEM (Hidden but Functional) ---
-        let analyser, dataArray;
-        let audioFactor = 0;
-        
-        async function initAudio() {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                const source = audioCtx.createMediaStreamSource(stream);
-                analyser = audioCtx.createAnalyser();
-                analyser.fftSize = 64;
-                source.connect(analyser);
-                dataArray = new Uint8Array(analyser.frequencyBinCount);
-                document.getElementById('mic-log').innerText = "Listening...";
-            } catch (e) {
-                console.log("Audio disabled");
-            }
+        // --- 2. THE PARTICLE CLOUD (SHAPES) ---
+        const pGeo = new THREE.BufferGeometry();
+        const positions = new Float32Array(CONFIG.particleCount * 3);
+        const targetPositions = new Float32Array(CONFIG.particleCount * 3);
+        const colors = new Float32Array(CONFIG.particleCount * 3);
+
+        // Initial Scatter
+        for (let i = 0; i < CONFIG.particleCount * 3; i++) {
+            positions[i] = (Math.random() - 0.5) * 100;
+            targetPositions[i] = positions[i];
+            colors[i] = 0.5; // Start dim
         }
 
-        // --- PARTICLE SYSTEM (Clean Style) ---
-        const geometry = new THREE.BufferGeometry();
-        const positions = new Float32Array(CONFIG.count * 3);
-        const targetPositions = new Float32Array(CONFIG.count * 3);
-        const colors = new Float32Array(CONFIG.count * 3);
-        const originalColors = new Float32Array(CONFIG.count * 3);
+        pGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        pGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
-        // Init: Galaxy Disc
-        for(let i=0; i<CONFIG.count; i++) {
-            const idx = i*3;
-            // Spiral Galaxy Logic
-            const r = Math.random() * 15;
-            const theta = i * 0.1 + (r * 0.5);
-            positions[idx] = r * Math.cos(theta);
-            positions[idx+1] = (Math.random()-0.5) * (r * 0.2); // Thin disc
-            positions[idx+2] = r * Math.sin(theta);
-            
-            targetPositions[idx] = positions[idx];
-            targetPositions[idx+1] = positions[idx+1];
-            targetPositions[idx+2] = positions[idx+2];
-
-            // Color: Cyan/Blue Mix
-            colors[idx] = 0.1; colors[idx+1] = 0.8; colors[idx+2] = 1.0;
-            if(Math.random()>0.8) { colors[idx]=1; colors[idx+1]=1; colors[idx+2]=1; } // White stars
-            
-            originalColors[idx] = colors[idx];
-            originalColors[idx+1] = colors[idx+1];
-            originalColors[idx+2] = colors[idx+2];
-        }
-
-        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-        geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-
-        // Use standard PointsMaterial (Cleaner than shader)
-        const sprite = new THREE.TextureLoader().load('https://threejs.org/examples/textures/sprites/disc.png');
-        const material = new THREE.PointsMaterial({
-            size: CONFIG.particleSize,
-            map: sprite,
+        const pMat = new THREE.PointsMaterial({
+            size: 0.3,
             vertexColors: true,
             blending: THREE.AdditiveBlending,
             transparent: true,
-            opacity: 0.8
+            opacity: 0.6 // Less bright than before
         });
 
-        const particleSystem = new THREE.Points(geometry, material);
+        const particleSystem = new THREE.Points(pGeo, pMat);
         scene.add(particleSystem);
 
-        // --- TRAIL SYSTEM (Thinner) ---
-        const trailGeo = new THREE.BufferGeometry();
-        const trailPos = new Float32Array(100 * 3).fill(0);
-        trailGeo.setAttribute('position', new THREE.BufferAttribute(trailPos, 3));
-        // Thinner line, less opacity
-        const trailMat = new THREE.LineBasicMaterial({ color: 0x00ffcc, opacity: 0.3, transparent: true });
-        const trailLine = new THREE.Line(trailGeo, trailMat);
-        scene.add(trailLine);
+        // --- 3. DRAWING SYSTEM (3D Lines) ---
+        const drawingGroup = new THREE.Group();
+        scene.add(drawingGroup);
+        
+        let currentLine = null;
+        let currentLineGeo = null;
+        let currentLinePositions = [];
 
-        // --- LOGIC ---
-        const state = {
-            hands: [],
-            mode: 'IDLE',
-            smoothHand: {x:0, y:0}
-        };
-
-        function startSystem() {
-            document.getElementById('start-screen').style.display = 'none';
-            initAudio();
-            initCamera();
-            animate();
+        function startStroke() {
+            currentLinePositions = [];
+            currentLineGeo = new THREE.BufferGeometry();
+            // Using LineBasicMaterial (Neon Pink)
+            const mat = new THREE.LineBasicMaterial({ 
+                color: 0xff00cc, 
+                opacity: 0.8, 
+                transparent: true, 
+                linewidth: 2 
+            });
+            currentLine = new THREE.Line(currentLineGeo, mat);
+            drawingGroup.add(currentLine);
         }
 
-        // --- HAND TRACKING ---
+        function updateStroke(x, y, z) {
+            if (!currentLine) return;
+            // Draw in actual 3D space relative to camera
+            currentLinePositions.push(x, y, z); 
+            const posAttr = new THREE.Float32BufferAttribute(currentLinePositions, 3);
+            currentLineGeo.setAttribute('position', posAttr);
+            // Limit stroke length for performance
+            if(currentLinePositions.length > 3000) endStroke(); 
+        }
+
+        function endStroke() {
+            currentLine = null;
+        }
+
+        // --- 4. VIRTUAL BUTTONS (Wireframe Only) ---
+        function createWireframeButton(x, color) {
+            const geo = new THREE.IcosahedronGeometry(2.5, 1);
+            const mat = new THREE.MeshBasicMaterial({ 
+                color: color, 
+                wireframe: true, 
+                transparent: true, 
+                opacity: 0.3 
+            });
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.set(x, -12, 10);
+            scene.add(mesh);
+            return mesh;
+        }
+
+        const btnShape = createWireframeButton(-12, 0x00ffcc); // Cyan
+        const btnDraw = createWireframeButton(12, 0xff00cc);  // Pink
+
+        // --- 5. SHAPE MATH ---
+        const shapes = {
+            'sphere': (i) => {
+                const r = 10;
+                const theta = Math.random() * Math.PI * 2;
+                const phi = Math.acos(2 * Math.random() - 1);
+                return [r * Math.sin(phi) * Math.cos(theta), r * Math.sin(phi) * Math.sin(theta), r * Math.cos(phi), 0.1, 0.9, 1.0];
+            },
+            'galaxy': (i) => {
+                const angle = Math.random() * Math.PI * 2;
+                const radius = 5 + Math.random() * 10;
+                const spiralOffset = radius * 0.5; // Spiral twist
+                const x = Math.cos(angle + spiralOffset) * radius;
+                const y = Math.sin(angle + spiralOffset) * radius * 0.5; // Flattened
+                const z = (Math.random() - 0.5) * 2;
+                return [x, y, z, 0.6, 0.2, 0.8]; // Purple/Blue
+            },
+            'cube': (i) => {
+                const s = 14;
+                // Random point on surface of cube
+                const axis = Math.floor(Math.random() * 3);
+                const pos = [(Math.random()-0.5)*s, (Math.random()-0.5)*s, (Math.random()-0.5)*s];
+                pos[axis] = (Math.random() > 0.5 ? 0.5 : -0.5) * s;
+                return [pos[0], pos[1], pos[2], 0.0, 1.0, 0.5]; // Greenish
+            },
+            'dna': (i) => {
+                const t = (i / CONFIG.particleCount) * Math.PI * 10;
+                const x = Math.sin(t) * 5;
+                const y = (i / CONFIG.particleCount) * 30 - 15;
+                const z = Math.cos(t) * 5;
+                // Double helix offset
+                const offset = (i % 2 === 0) ? 1 : -1;
+                return [x*offset, y, z*offset, 1.0, 0.0, 0.3]; // Red
+            }
+        };
+        const shapeKeys = Object.keys(shapes);
+
+        function morph(name) {
+            const func = shapes[name];
+            for (let i = 0; i < CONFIG.particleCount; i++) {
+                const [x, y, z, r, g, b] = func(i);
+                const idx = i * 3;
+                targetPositions[idx] = x;
+                targetPositions[idx+1] = y;
+                targetPositions[idx+2] = z;
+                colors[idx] = r; colors[idx+1] = g; colors[idx+2] = b;
+            }
+            pGeo.attributes.color.needsUpdate = true;
+            document.getElementById('mode-indicator').innerText = name.toUpperCase();
+            document.getElementById('mode-indicator').style.color = "rgba(255,255,255,0.8)";
+        }
+        
+        morph('sphere');
+
+        // --- 6. INPUT HANDLING ---
         function onResults(results) {
-            state.hands = [];
-            
+            // Hide Loader on first frame
+            if (!state.systemReady) {
+                document.getElementById('loader').style.display = 'none';
+                state.systemReady = true;
+            }
+
             if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-                document.getElementById('state-log').innerText = "Tracking " + results.multiHandLandmarks.length + " Hand(s)";
-                
-                for (const lm of results.multiHandLandmarks) {
-                    // Map Coordinates
-                    const x = (lm[8].x - 0.5) * -40;
-                    const y = (lm[8].y - 0.5) * -30;
-                    
-                    // Simple Fist Detection
-                    const d = Math.hypot(lm[8].x - lm[0].x, lm[8].y - lm[0].y);
-                    const isFist = d < 0.3; // Normalized coord distance
+                const landmarks = results.multiHandLandmarks[0];
+                const index = landmarks[8];
+                const thumb = landmarks[4];
+                const wrist = landmarks[0];
 
-                    // Index Finger Pointing? (Tip above knuckle)
-                    const isPointing = !isFist && lm[8].y < lm[6].y;
+                // 1. Coordinates mapping
+                // Map 0..1 to -Range..+Range
+                const x = (index.x - 0.5) * -40; // Invert X for mirror effect
+                const y = (index.y - 0.5) * -30;
+                // Approximate Z based on wrist size/position (Simple depth estimation)
+                const z = (wrist.z) * -30; 
 
-                    state.hands.push({ x, y, isFist, isPointing });
+                // 2. Smoothing (Lerp)
+                state.rawHand.x = x; state.rawHand.y = y; state.rawHand.z = z;
+                state.hand.x += (x - state.hand.x) * CONFIG.smoothFactor;
+                state.hand.y += (y - state.hand.y) * CONFIG.smoothFactor;
+                state.hand.z += (z - state.hand.z) * CONFIG.smoothFactor;
+
+                // 3. Velocity Calculation
+                state.velocity = state.hand.x - state.lastHandX || 0;
+                state.lastHandX = state.hand.x;
+
+                // 4. Pinch Detection
+                const dist = Math.sqrt(Math.pow(index.x - thumb.x, 2) + Math.pow(index.y - thumb.y, 2));
+                const wasPinching = state.isPinching;
+                state.isPinching = dist < CONFIG.pinchThreshold;
+
+                // --- INTERACTION LOGIC ---
+
+                // Button Interaction (Mode Switch)
+                if (state.isPinching && !wasPinching) {
+                    if (state.hand.distanceTo(btnShape.position) < 6) {
+                        setMode('SHAPE');
+                        triggerBtn(btnShape);
+                    } else if (state.hand.distanceTo(btnDraw.position) < 6) {
+                        setMode('DRAW');
+                        triggerBtn(btnDraw);
+                    }
                 }
-            } else {
-                document.getElementById('state-log').innerText = "Searching...";
+
+                // Shape Mode Actions
+                if (state.mode === 'SHAPE') {
+                    if (state.swipeCooldown > 0) state.swipeCooldown--;
+                    else if (Math.abs(state.velocity) > CONFIG.swipeThreshold) {
+                        const dir = Math.sign(state.velocity);
+                        // Cycle shapes
+                        state.currentShapeIdx = (state.currentShapeIdx + dir + shapeKeys.length) % shapeKeys.length;
+                        morph(shapeKeys[state.currentShapeIdx]);
+                        state.swipeCooldown = 25;
+                    }
+                }
+
+                // Draw Mode Actions
+                if (state.mode === 'DRAW') {
+                    if (state.isPinching) {
+                        if (!currentLine) startStroke();
+                        updateStroke(state.hand.x, state.hand.y, state.hand.z);
+                    } else {
+                        if (currentLine) endStroke();
+                    }
+                }
             }
         }
+        
+        // Helper: Add distanceTo method to our simple hand object
+        state.hand.distanceTo = function(vec3) {
+            return Math.sqrt(Math.pow(this.x - vec3.x, 2) + Math.pow(this.y - vec3.y, 2)); // 2D distance for UI buttons
+        };
 
-        function initCamera() {
-            const video = document.getElementById('video-input');
-            const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
-            hands.setOptions({ maxNumHands: 2, minDetectionConfidence: 0.6, minTrackingConfidence: 0.6 });
-            hands.onResults(onResults);
+        function setMode(mode) {
+            state.mode = mode;
+            document.getElementById('mode-text').innerText = mode === 'SHAPE' ? "SHAPE VIEW" : "3D DRAWING";
+            document.getElementById('instructions-shape').style.display = mode === 'SHAPE' ? 'block' : 'none';
+            document.getElementById('instructions-draw').style.display = mode === 'DRAW' ? 'block' : 'none';
+            document.getElementById('mode-indicator').innerText = mode;
             
-            const camera = new Camera(video, {
-                onFrame: async () => { await hands.send({image: video}); },
-                width: 640, height: 480
-            });
-            camera.start();
+            // Toggle Visibility
+            particleSystem.visible = (mode === 'SHAPE');
+            drawingGroup.visible = (mode === 'DRAW');
         }
 
-        // --- ANIMATION LOOP ---
+        function triggerBtn(mesh) {
+            mesh.material.opacity = 1;
+            mesh.scale.setScalar(1.2);
+            setTimeout(() => {
+                mesh.material.opacity = 0.3;
+                mesh.scale.setScalar(1.0);
+            }, 200);
+        }
+
+        // --- 7. ANIMATION LOOP ---
         function animate() {
             requestAnimationFrame(animate);
 
-            // 1. Process Audio
-            if (analyser) {
-                analyser.getByteFrequencyData(dataArray);
-                let sum = 0;
-                for(let i=0; i<dataArray.length; i++) sum += dataArray[i];
-                // Smooth audio factor
-                const targetFactor = sum / dataArray.length / 255; 
-                audioFactor += (targetFactor - audioFactor) * 0.1;
+            // Particle Interpolation (Morphing)
+            if (particleSystem.visible) {
+                const posArr = pGeo.attributes.position.array;
+                for (let i = 0; i < CONFIG.particleCount * 3; i++) {
+                    posArr[i] += (targetPositions[i] - posArr[i]) * 0.08;
+                }
+                pGeo.attributes.position.needsUpdate = true;
+
+                // Hand Interaction: Rotate Cloud
+                if (!state.isPinching && Math.abs(state.velocity) < 0.2) {
+                    particleSystem.rotation.y += state.hand.x * 0.0005;
+                    particleSystem.rotation.x -= state.hand.y * 0.0005;
+                }
             }
 
-            // Audio Visuals (Subtle pulse)
-            material.size = CONFIG.particleSize + (audioFactor * 0.2); // Only slightly get bigger
-
-            // 2. Gesture Logic
-            let rotX = 0, rotY = 0;
-            let explosion = 0;
-            let stretch = 1;
-            let gravity = null;
-
-            if (state.hands.length === 1) {
-                const h = state.hands[0];
-                state.smoothHand.x += (h.x - state.smoothHand.x) * 0.1;
-                state.smoothHand.y += (h.y - state.smoothHand.y) * 0.1;
-
-                rotY = state.smoothHand.x * 0.002;
-                rotX = state.smoothHand.y * 0.002;
-
-                if (h.isFist) {
-                    document.getElementById('status-text').innerText = "CHAOS MODE";
-                    explosion = 2; // Chaos magnitude
-                } else if (h.isPointing) {
-                    document.getElementById('status-text').innerText = "DRAWING TRAIL";
-                    // Update Trail
-                    const posAttr = trailLine.geometry.attributes.position;
-                    const arr = posAttr.array;
-                    // Shift values down
-                    for(let i=299; i>=3; i--) arr[i] = arr[i-3];
-                    arr[0] = h.x; arr[1] = h.y; arr[2] = 5;
-                    posAttr.needsUpdate = true;
-                } else {
-                    document.getElementById('status-text').innerText = "ROTATING";
-                }
-
-            } else if (state.hands.length === 2) {
-                const h1 = state.hands[0];
-                const h2 = state.hands[1];
-                const dist = Math.hypot(h1.x - h2.x, h1.y - h2.y);
-
-                if (dist < 8) {
-                    document.getElementById('status-text').innerText = "BLACK HOLE";
-                    gravity = { x: (h1.x+h2.x)/2, y: (h1.y+h2.y)/2 };
-                } else if (dist > 15) {
-                    document.getElementById('status-text').innerText = "WARPING SPACE";
-                    stretch = 1 + (dist-15)*0.05;
-                } else {
-                    document.getElementById('status-text').innerText = "DUAL HANDS DETECTED";
-                }
-            } else {
-                // IDLE
-                document.getElementById('status-text').innerText = "";
-                rotY = 0.002; // Auto spin
-            }
-
-            // Apply Rotation
-            particleSystem.rotation.y += rotY;
-            particleSystem.rotation.x -= rotX;
-
-            // 3. Physics Update
-            const pos = geometry.attributes.position.array;
-            const target = geometry.attributes.target.array;
-            const col = geometry.attributes.color.array;
-
-            for(let i=0; i<CONFIG.count; i++) {
-                const idx = i*3;
-                let tx = target[idx];
-                let ty = target[idx+1];
-                let tz = target[idx+2];
-
-                // Modifiers
-                if (stretch !== 1) { tx *= stretch; ty *= stretch; tz *= stretch; }
-                
-                if (gravity) {
-                    // Pull towards center
-                    tx = tx * 0.9 + gravity.x * 0.1;
-                    ty = ty * 0.9 + gravity.y * 0.1;
-                    tz = tz * 0.9;
-                }
-
-                if (explosion > 0) {
-                    tx += (Math.random()-0.5) * explosion * 10;
-                    ty += (Math.random()-0.5) * explosion * 10;
-                    tz += (Math.random()-0.5) * explosion * 10;
-                }
-
-                // Audio Color Pulse (Subtle)
-                if (audioFactor > 0.4 && i % 20 === 0) {
-                    col[idx] = 1; col[idx+1] = 0; col[idx+2] = 0.5; // Pink accents on beat
-                } else {
-                    // Return to original
-                    col[idx] += (originalColors[idx] - col[idx]) * 0.05;
-                    col[idx+1] += (originalColors[idx+1] - col[idx+1]) * 0.05;
-                    col[idx+2] += (originalColors[idx+2] - col[idx+2]) * 0.05;
-                }
-
-                // Lerp Position
-                pos[idx] += (tx - pos[idx]) * 0.08;
-                pos[idx+1] += (ty - pos[idx+1]) * 0.08;
-                pos[idx+2] += (tz - pos[idx+2]) * 0.08;
-            }
-
-            geometry.attributes.position.needsUpdate = true;
-            geometry.attributes.color.needsUpdate = true;
+            // Animate Buttons
+            const time = Date.now() * 0.001;
+            btnShape.rotation.y = time * 0.5;
+            btnShape.rotation.z = time * 0.2;
+            btnDraw.rotation.y = -time * 0.5;
+            btnDraw.rotation.z = -time * 0.2;
 
             renderer.render(scene, camera);
         }
 
-        // Resize
+        // --- INIT ---
+        const videoElement = document.getElementById('video-input');
+        const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
+        hands.setOptions({ 
+            maxNumHands: 1, 
+            modelComplexity: 1, 
+            minDetectionConfidence: 0.5, 
+            minTrackingConfidence: 0.5 
+        });
+        hands.onResults(onResults);
+        
+        const cameraUtils = new Camera(videoElement, {
+            onFrame: async () => { await hands.send({image: videoElement}); },
+            width: 640, height: 480
+        });
+        cameraUtils.start();
+
+        animate();
+
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
