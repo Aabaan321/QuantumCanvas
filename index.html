@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>NebulaTouch v2: Enhanced Gesture OS</title>
+    <title>NebulaTouch v3: Ultimate Gesture OS</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #050505; font-family: 'Courier New', Courier, monospace; }
         canvas { display: block; }
@@ -19,9 +19,11 @@
             border: 2px solid #00ffcc;
             box-shadow: 0 0 20px rgba(0, 255, 204, 0.3);
             backdrop-filter: blur(10px);
+            max-height: 90vh;
+            overflow-y: auto;
         }
         h1 { margin: 0; font-size: 1.3rem; text-transform: uppercase; letter-spacing: 3px; text-shadow: 0 0 10px #00ffcc; }
-        p { font-size: 0.9rem; margin: 5px 0; opacity: 0.9; }
+        p { font-size: 0.85rem; margin: 5px 0; opacity: 0.9; }
         .highlight { color: #fff; font-weight: bold; text-shadow: 0 0 5px #00ffcc; }
         #mode-indicator {
             position: absolute;
@@ -50,38 +52,135 @@
             opacity: 1;
         }
         .stat-bar {
-            margin-top: 8px;
+            margin-top: 5px;
             font-size: 0.75rem;
             color: #00ffcc;
             opacity: 0.7;
+        }
+        .section-title {
+            color: #ff00cc;
+            font-weight: bold;
+            margin-top: 10px;
+            font-size: 0.9rem;
+        }
+        #feature-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 12px;
+            border: 2px solid #ff00cc;
+            color: white;
+            max-width: 280px;
+            backdrop-filter: blur(10px);
+            z-index: 10;
+            pointer-events: none;
+        }
+        .feature-item {
+            font-size: 0.75rem;
+            margin: 5px 0;
+            padding: 3px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .feature-active {
+            color: #00ff00;
+            font-weight: bold;
+        }
+        .feature-inactive {
+            color: #666;
+        }
+        #particle-trail {
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: 1;
+        }
+        .help-toggle {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(255, 0, 204, 0.8);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            z-index: 20;
+            pointer-events: auto;
+        }
+        .help-toggle:hover {
+            background: rgba(255, 0, 204, 1);
         }
     </style>
 </head>
 <body>
 
     <div id="ui">
-        <h1>⚡ NebulaTouch v2+</h1>
-        <p>Current Mode: <span id="mode-text" class="highlight">SHAPE VIEW</span></p>
+        <h1>⚡ NebulaTouch v3 ULTRA</h1>
+        <p>Mode: <span id="mode-text" class="highlight">SHAPE VIEW</span></p>
         <p class="stat-bar">Shape: <span id="shape-name" class="highlight">SPHERE</span></p>
         <p class="stat-bar">Scale: <span id="scale-value" class="highlight">1.0x</span></p>
+        <p class="stat-bar">Hands: <span id="hand-count" class="highlight">0</span></p>
+        <p class="stat-bar">FPS: <span id="fps-counter" class="highlight">60</span></p>
         <hr style="border-color: #333">
+        
+        <p class="section-title">🖐️ ONE HAND GESTURES</p>
         <div id="instructions-shape">
             <p>👋 <b>Swipe Fast:</b> Scroll Shapes</p>
             <p>🤏 <b>Pinch Distance:</b> Resize Object</p>
             <p>✋ <b>Move Slow:</b> Rotate View</p>
             <p>✌️ <b>Peace Sign:</b> Auto-Rotate Toggle</p>
             <p>👍 <b>Thumbs Up:</b> Random Colors</p>
+            <p>👎 <b>Thumbs Down:</b> Reset View</p>
+            <p>☝️ <b>Point Up:</b> Increase Particle Speed</p>
+            <p>🤘 <b>Rock Sign:</b> Explode Effect</p>
+            <p>🖖 <b>Vulcan:</b> Freeze/Unfreeze</p>
         </div>
+        
+        <p class="section-title">🙌 TWO HAND GESTURES</p>
+        <p>🤲 <b>Both Open Palms:</b> Gravity Field</p>
+        <p>✌️✌️ <b>Both Peace:</b> Mirror Mode</p>
+        <p>👏 <b>Clap (Close Together):</b> Shockwave</p>
+        <p>🤏🤏 <b>Both Pinch:</b> Zoom Camera</p>
+        <p>👐 <b>Spread Apart:</b> Particle Expansion</p>
+        <p>🔄 <b>Rotate Hands:</b> Spin Particles</p>
+        
+        <p class="section-title">✏️ DRAW MODE</p>
         <div id="instructions-draw" style="display:none;">
             <p>🤏 <b>Pinch & Move:</b> Draw in 3D</p>
             <p>✋ <b>Release:</b> Stop Drawing</p>
             <p>👋 <b>Swipe:</b> Clear Canvas</p>
+            <p>✌️ <b>Peace:</b> Change Brush Color</p>
+            <p>👍 <b>Thumbs Up:</b> Increase Brush Size</p>
+            <p>👎 <b>Thumbs Down:</b> Decrease Brush Size</p>
         </div>
-        <p style="margin-top:10px; font-size: 0.7rem; color: #aaa;">💡 Pinch the floating orbs to switch modes</p>
+        
+        <p style="margin-top:10px; font-size: 0.7rem; color: #aaa;">💡 Pinch the orbs to switch modes</p>
     </div>
 
+    <div id="feature-panel">
+        <h3 style="margin: 0 0 10px 0; color: #ff00cc;">🎛️ Active Features</h3>
+        <div class="feature-item"><span id="f-auto-rotate">⭕ Auto-Rotate</span></div>
+        <div class="feature-item"><span id="f-gravity">⭕ Gravity Field</span></div>
+        <div class="feature-item"><span id="f-mirror">⭕ Mirror Mode</span></div>
+        <div class="feature-item"><span id="f-freeze">⭕ Freeze</span></div>
+        <div class="feature-item"><span id="f-trails">⭕ Particle Trails</span></div>
+        <div class="feature-item"><span id="f-sound">🔊 Sound Effects</span></div>
+        <div class="feature-item"><span id="f-glow">⭕ Glow Effect</span></div>
+        <div class="feature-item"><span id="f-music">🎵 Music Mode</span></div>
+        <div class="feature-item"><span id="f-rainbow">⭕ Rainbow Mode</span></div>
+        <div class="feature-item"><span id="f-pulsate">⭕ Pulsate</span></div>
+    </div>
+
+    <button class="help-toggle" onclick="toggleUI()">Toggle Help</button>
+    
     <div id="mode-indicator">Initializing...</div>
     <div id="gesture-feedback"></div>
+    <canvas id="particle-trail"></canvas>
     <video id="video-input" playsinline></video>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -90,19 +189,39 @@
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
 
     <script>
+        // --- AUDIO CONTEXT FOR SOUND EFFECTS ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function playSound(frequency, duration, type = 'sine') {
+            if (!state.soundEnabled) return;
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            oscillator.frequency.value = frequency;
+            oscillator.type = type;
+            gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+            oscillator.start(audioCtx.currentTime);
+            oscillator.stop(audioCtx.currentTime + duration);
+        }
+
         // --- CONFIGURATION ---
         const CONFIG = {
-            particleCount: 8000,
+            particleCount: 10000,
             camZ: 40,
             swipeThreshold: 0.8,
             pinchThreshold: 0.05,
-            drawDistance: 30
+            drawDistance: 30,
+            clapThreshold: 0.15,
+            handSpreadThreshold: 0.6
         };
 
         // --- STATE MANAGEMENT ---
         const state = {
             mode: 'SHAPE',
             hand: { x: 0, y: 0, z: 0 },
+            hand2: { x: 0, y: 0, z: 0 },
             lastHandX: 0,
             lastHandY: 0,
             velocity: 0,
@@ -111,8 +230,29 @@
             swipeCooldown: 0,
             currentShapeIdx: 0,
             autoRotate: false,
-            gestureCooldown: 0
+            gravityField: false,
+            mirrorMode: false,
+            freeze: false,
+            particleTrails: false,
+            soundEnabled: true,
+            glowEffect: false,
+            musicMode: false,
+            rainbowMode: false,
+            pulsate: false,
+            gestureCooldown: 0,
+            explosionActive: false,
+            brushSize: 1,
+            handCount: 0,
+            particleSpeed: 0.08,
+            lastFrameTime: Date.now(),
+            fps: 60
         };
+
+        // --- 2D CANVAS FOR TRAILS ---
+        const trailCanvas = document.getElementById('particle-trail');
+        trailCanvas.width = window.innerWidth;
+        trailCanvas.height = window.innerHeight;
+        const trailCtx = trailCanvas.getContext('2d');
 
         // --- THREE.JS SETUP ---
         const scene = new THREE.Scene();
@@ -125,17 +265,22 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        // Add ambient lighting for better depth perception
+        // Lights
         const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
         scene.add(ambientLight);
         const pointLight = new THREE.PointLight(0x00ffcc, 1, 100);
         pointLight.position.set(20, 20, 20);
         scene.add(pointLight);
 
-        // --- 1. ENHANCED PARTICLE SYSTEM ---
+        const pointLight2 = new THREE.PointLight(0xff00cc, 1, 100);
+        pointLight2.position.set(-20, -20, 20);
+        scene.add(pointLight2);
+
+        // --- ENHANCED PARTICLE SYSTEM ---
         const geometry = new THREE.BufferGeometry();
         const positions = new Float32Array(CONFIG.particleCount * 3);
         const targetPositions = new Float32Array(CONFIG.particleCount * 3);
+        const velocities = new Float32Array(CONFIG.particleCount * 3);
         const colors = new Float32Array(CONFIG.particleCount * 3);
         const sizes = new Float32Array(CONFIG.particleCount);
 
@@ -147,10 +292,13 @@
             targetPositions[idx] = positions[idx];
             targetPositions[idx+1] = positions[idx+1];
             targetPositions[idx+2] = positions[idx+2];
+            velocities[idx] = 0;
+            velocities[idx+1] = 0;
+            velocities[idx+2] = 0;
             colors[idx] = 1;
             colors[idx+1] = 1;
             colors[idx+2] = 1;
-            sizes[i] = Math.random() * 0.4 + 0.1;
+            sizes[i] = Math.random() * 0.5 + 0.1;
         }
 
         geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
@@ -169,31 +317,27 @@
         const particleSystem = new THREE.Points(geometry, material);
         scene.add(particleSystem);
 
-        // --- 2. ENHANCED DRAWING SYSTEM ---
-        const drawMaterial = new THREE.LineBasicMaterial({ 
-            color: 0xff00cc, 
-            linewidth: 3,
-            transparent: true,
-            opacity: 0.8
-        });
+        // --- DRAWING SYSTEM ---
         const drawingGroup = new THREE.Group();
         scene.add(drawingGroup);
         
         let currentLine = null;
         let currentLineGeo = null;
         let currentLinePositions = [];
+        let currentBrushColor = new THREE.Color().setHSL(Math.random(), 1, 0.5);
 
         function startStroke() {
             currentLinePositions = [];
             currentLineGeo = new THREE.BufferGeometry();
             const lineMat = new THREE.LineBasicMaterial({ 
-                color: new THREE.Color().setHSL(Math.random(), 1, 0.5),
-                linewidth: 3,
+                color: currentBrushColor,
+                linewidth: state.brushSize * 3,
                 transparent: true,
                 opacity: 0.8
             });
             currentLine = new THREE.Line(currentLineGeo, lineMat);
             drawingGroup.add(currentLine);
+            playSound(400, 0.05, 'triangle');
         }
 
         function updateStroke(x, y) {
@@ -215,9 +359,10 @@
                 drawingGroup.remove(child);
             }
             showGestureFeedback('🗑️');
+            playSound(200, 0.2, 'sawtooth');
         }
 
-        // --- 3. ENHANCED UI BUTTONS ---
+        // --- UI BUTTONS ---
         const btnShapeGeo = new THREE.SphereGeometry(2.5, 32, 32);
         const btnShapeMat = new THREE.MeshPhongMaterial({ 
             color: 0x00ffff, 
@@ -323,6 +468,45 @@
                 const y = (R + r * Math.cos(v)) * Math.sin(u);
                 const z = r * Math.sin(v);
                 return [x, y, z, 0.9, 0.3, 0.7];
+            },
+            'helix': (i) => {
+                const t = (i / CONFIG.particleCount) * Math.PI * 6;
+                const r = 8;
+                const x = r * Math.cos(t);
+                const z = r * Math.sin(t);
+                const y = (i / CONFIG.particleCount - 0.5) * 30;
+                return [x, y, z, 0.2, 0.9, 0.5];
+            },
+            'star': (i) => {
+                const angle = Math.random() * Math.PI * 2;
+                const spike = Math.floor(Math.random() * 5);
+                const baseAngle = (spike / 5) * Math.PI * 2;
+                const variation = (Math.random() - 0.5) * (Math.PI / 5);
+                const finalAngle = baseAngle + variation;
+                const r = (Math.random() * 8 + 8) * (1 + Math.sin(5 * angle));
+                const x = r * Math.cos(finalAngle);
+                const y = r * Math.sin(finalAngle);
+                const z = (Math.random() - 0.5) * 3;
+                return [x, y, z, 1.0, 0.9, 0.2];
+            },
+            'galaxy': (i) => {
+                const arm = Math.floor(Math.random() * 3);
+                const t = Math.random() * Math.PI * 4;
+                const r = t * 2.5;
+                const armAngle = (arm / 3) * Math.PI * 2;
+                const x = r * Math.cos(t + armAngle);
+                const z = r * Math.sin(t + armAngle);
+                const y = (Math.random() - 0.5) * 3;
+                return [x, y, z, 0.9, 0.8, 1.0];
+            },
+            'dna': (i) => {
+                const t = (i / CONFIG.particleCount) * Math.PI * 8;
+                const r = 6;
+                const strand = i % 2;
+                const x = r * Math.cos(t + strand * Math.PI);
+                const z = r * Math.sin(t + strand * Math.PI);
+                const y = (i / CONFIG.particleCount - 0.5) * 35;
+                return [x, y, z, strand ? 1.0 : 0.2, 0.3, strand ? 0.2 : 1.0];
             }
         };
 
@@ -336,11 +520,14 @@
                 targetPositions[idx] = x;
                 targetPositions[idx+1] = y;
                 targetPositions[idx+2] = z;
-                colors[idx] = r; colors[idx+1] = g; colors[idx+2] = b;
+                if (!state.rainbowMode) {
+                    colors[idx] = r; colors[idx+1] = g; colors[idx+2] = b;
+                }
             }
             geometry.attributes.color.needsUpdate = true;
             document.getElementById('shape-name').innerText = name.toUpperCase();
             document.getElementById('mode-indicator').innerText = name.toUpperCase();
+            playSound(440 + state.currentShapeIdx * 50, 0.1, 'sine');
         }
 
         function randomizeColors() {
@@ -354,6 +541,46 @@
             }
             geometry.attributes.color.needsUpdate = true;
             showGestureFeedback('🎨');
+            playSound(800, 0.15, 'square');
+        }
+
+        function resetView() {
+            particleSystem.rotation.set(0, 0, 0);
+            particleSystem.scale.set(1, 1, 1);
+            camera.position.z = CONFIG.camZ;
+            state.particleSpeed = 0.08;
+            showGestureFeedback('🔄');
+            playSound(300, 0.2, 'triangle');
+        }
+
+        function explodeParticles() {
+            state.explosionActive = true;
+            for (let i = 0; i < CONFIG.particleCount; i++) {
+                const idx = i * 3;
+                velocities[idx] = (Math.random() - 0.5) * 5;
+                velocities[idx+1] = (Math.random() - 0.5) * 5;
+                velocities[idx+2] = (Math.random() - 0.5) * 5;
+            }
+            showGestureFeedback('💥');
+            playSound(100, 0.5, 'sawtooth');
+            setTimeout(() => { state.explosionActive = false; }, 2000);
+        }
+
+        function createShockwave(centerX, centerY) {
+            const posArr = geometry.attributes.position.array;
+            for (let i = 0; i < CONFIG.particleCount; i++) {
+                const idx = i * 3;
+                const dx = posArr[idx] - centerX;
+                const dy = posArr[idx+1] - centerY;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                if (dist < 30) {
+                    const force = (30 - dist) / 30;
+                    velocities[idx] += (dx / dist) * force * 3;
+                    velocities[idx+1] += (dy / dist) * force * 3;
+                }
+            }
+            showGestureFeedback('💫');
+            playSound(150, 0.3, 'sine');
         }
 
         function showGestureFeedback(emoji) {
@@ -361,6 +588,13 @@
             feedback.textContent = emoji;
             feedback.classList.add('show');
             setTimeout(() => feedback.classList.remove('show'), 500);
+        }
+
+        function updateFeatureDisplay(feature, active) {
+            const element = document.getElementById('f-' + feature);
+            if (element) {
+                element.className = active ? 'feature-active' : 'feature-inactive';
+            }
         }
 
         morphToShape('sphere');
@@ -385,6 +619,12 @@
             const middleExt = isExtended(middle_tip, middle_mcp);
             const ringExt = isExtended(ring_tip, ring_mcp);
             const pinkyExt = isExtended(pinky_tip, pinky_mcp);
+            const thumbExt = thumb_tip.x < landmarks[3].x;
+
+            // Open palm
+            if (indexExt && middleExt && ringExt && pinkyExt) {
+                return 'open_palm';
+            }
 
             // Peace sign
             if (indexExt && middleExt && !ringExt && !pinkyExt) {
@@ -392,9 +632,77 @@
             }
 
             // Thumbs up
-            if (!indexExt && !middleExt && !ringExt && !pinkyExt) {
-                const thumbAbove = thumb_tip.y < landmarks[3].y;
-                if (thumbAbove) return 'thumbs_up';
+            if (!indexExt && !middleExt && !ringExt && !pinkyExt && thumb_tip.y < landmarks[3].y) {
+                return 'thumbs_up';
+            }
+
+            // Thumbs down
+            if (!indexExt && !middleExt && !ringExt && !pinkyExt && thumb_tip.y > landmarks[3].y) {
+                return 'thumbs_down';
+            }
+
+            // Point up
+            if (indexExt && !middleExt && !ringExt && !pinkyExt && index_tip.y < middle_mcp.y - 0.1) {
+                return 'point_up';
+            }
+
+            // Rock sign
+            if (indexExt && !middleExt && !ringExt && pinkyExt) {
+                return 'rock';
+            }
+
+            // Vulcan (spread between middle and ring)
+            if (indexExt && middleExt && ringExt && pinkyExt) {
+                const middleRingDist = Math.abs(middle_tip.x - ring_tip.x);
+                const indexMiddleDist = Math.abs(index_tip.x - middle_tip.x);
+                if (middleRingDist > indexMiddleDist * 1.5) {
+                    return 'vulcan';
+                }
+            }
+
+            return null;
+        }
+
+        function detectTwoHandGesture(hands1, hands2) {
+            const index1 = hands1[8];
+            const index2 = hands2[8];
+            const thumb1 = hands1[4];
+            const thumb2 = hands2[4];
+            
+            const handDist = Math.sqrt(
+                Math.pow(index1.x - index2.x, 2) + 
+                Math.pow(index1.y - index2.y, 2)
+            );
+
+            const gesture1 = detectGesture(hands1);
+            const gesture2 = detectGesture(hands2);
+
+            // Clap (hands close together)
+            if (handDist < CONFIG.clapThreshold) {
+                return 'clap';
+            }
+
+            // Spread apart
+            if (handDist > CONFIG.handSpreadThreshold) {
+                return 'spread';
+            }
+
+            // Both peace signs
+            if (gesture1 === 'peace' && gesture2 === 'peace') {
+                return 'both_peace';
+            }
+
+            // Both open palms
+            if (gesture1 === 'open_palm' && gesture2 === 'open_palm') {
+                return 'both_open';
+            }
+
+            // Both pinching
+            const pinch1 = Math.sqrt(Math.pow(index1.x - thumb1.x, 2) + Math.pow(index1.y - thumb1.y, 2));
+            const pinch2 = Math.sqrt(Math.pow(index2.x - thumb2.x, 2) + Math.pow(index2.y - thumb2.y, 2));
+            
+            if (pinch1 < CONFIG.pinchThreshold && pinch2 < CONFIG.pinchThreshold) {
+                return 'both_pinch';
             }
 
             return null;
@@ -405,10 +713,13 @@
             const shapeName = shapeKeys[state.currentShapeIdx].toUpperCase();
             document.getElementById('mode-indicator').innerText = state.mode === 'SHAPE' ? shapeName : "DRAW MODE";
             document.getElementById('scale-value').innerText = particleSystem.scale.x.toFixed(1) + 'x';
+            
+            const handCount = results.multiHandLandmarks ? results.multiHandLandmarks.length : 0;
+            state.handCount = handCount;
+            document.getElementById('hand-count').innerText = handCount;
 
-            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+            if (handCount > 0) {
                 const landmarks = results.multiHandLandmarks[0];
-
                 const idxFinger = landmarks[8];
                 const thumb = landmarks[4];
                 
@@ -430,16 +741,97 @@
                 const wasPinching = state.isPinching;
                 state.isPinching = dist < CONFIG.pinchThreshold;
 
-                // Detect advanced gestures
+                // Two hand gestures
+                if (handCount === 2) {
+                    const landmarks2 = results.multiHandLandmarks[1];
+                    const idxFinger2 = landmarks2[8];
+                    const x2 = (idxFinger2.x - 0.5) * -40;
+                    const y2 = (idxFinger2.y - 0.5) * -30;
+                    state.hand2.x = x2;
+                    state.hand2.y = y2;
+
+                    const twoHandGesture = detectTwoHandGesture(landmarks, landmarks2);
+                    
+                    if (state.gestureCooldown <= 0 && twoHandGesture) {
+                        if (twoHandGesture === 'both_open') {
+                            state.gravityField = !state.gravityField;
+                            updateFeatureDisplay('gravity', state.gravityField);
+                            showGestureFeedback(state.gravityField ? '🌌' : '⭕');
+                            playSound(600, 0.2, 'sine');
+                            state.gestureCooldown = 30;
+                        } else if (twoHandGesture === 'both_peace') {
+                            state.mirrorMode = !state.mirrorMode;
+                            updateFeatureDisplay('mirror', state.mirrorMode);
+                            showGestureFeedback(state.mirrorMode ? '🪞' : '⭕');
+                            playSound(700, 0.2, 'triangle');
+                            state.gestureCooldown = 30;
+                        } else if (twoHandGesture === 'clap') {
+                            createShockwave(0, 0);
+                            state.gestureCooldown = 30;
+                        } else if (twoHandGesture === 'both_pinch') {
+                            const zoomDist = Math.sqrt(
+                                Math.pow(idxFinger.x - idxFinger2.x, 2) + 
+                                Math.pow(idxFinger.y - idxFinger2.y, 2)
+                            );
+                            camera.position.z = 20 + (1 - Math.min(zoomDist, 1)) * 60;
+                        } else if (twoHandGesture === 'spread') {
+                            const spreadFactor = Math.sqrt(
+                                Math.pow(x - x2, 2) + Math.pow(y - y2, 2)
+                            ) / 20;
+                            for (let i = 0; i < CONFIG.particleCount; i++) {
+                                const idx = i * 3;
+                                targetPositions[idx] *= (1 + spreadFactor * 0.05);
+                                targetPositions[idx+1] *= (1 + spreadFactor * 0.05);
+                                targetPositions[idx+2] *= (1 + spreadFactor * 0.05);
+                            }
+                        }
+                    }
+                }
+
+                // Single hand gestures
                 const gesture = detectGesture(landmarks);
                 
                 if (state.gestureCooldown <= 0 && gesture) {
                     if (gesture === 'peace' && state.mode === 'SHAPE') {
                         state.autoRotate = !state.autoRotate;
+                        updateFeatureDisplay('auto-rotate', state.autoRotate);
                         showGestureFeedback(state.autoRotate ? '🔄' : '⏸️');
+                        playSound(500, 0.15, 'sine');
                         state.gestureCooldown = 30;
+                    } else if (gesture === 'peace' && state.mode === 'DRAW') {
+                        currentBrushColor = new THREE.Color().setHSL(Math.random(), 1, 0.5);
+                        showGestureFeedback('🎨');
+                        playSound(600, 0.1, 'triangle');
+                        state.gestureCooldown = 20;
                     } else if (gesture === 'thumbs_up' && state.mode === 'SHAPE') {
                         randomizeColors();
+                        state.gestureCooldown = 30;
+                    } else if (gesture === 'thumbs_up' && state.mode === 'DRAW') {
+                        state.brushSize = Math.min(state.brushSize + 0.5, 5);
+                        showGestureFeedback('➕');
+                        playSound(700, 0.1, 'sine');
+                        state.gestureCooldown = 20;
+                    } else if (gesture === 'thumbs_down' && state.mode === 'SHAPE') {
+                        resetView();
+                        state.gestureCooldown = 30;
+                    } else if (gesture === 'thumbs_down' && state.mode === 'DRAW') {
+                        state.brushSize = Math.max(state.brushSize - 0.5, 0.5);
+                        showGestureFeedback('➖');
+                        playSound(500, 0.1, 'sine');
+                        state.gestureCooldown = 20;
+                    } else if (gesture === 'point_up') {
+                        state.particleSpeed = Math.min(state.particleSpeed + 0.02, 0.3);
+                        showGestureFeedback('⚡');
+                        playSound(900, 0.1, 'square');
+                        state.gestureCooldown = 20;
+                    } else if (gesture === 'rock') {
+                        explodeParticles();
+                        state.gestureCooldown = 60;
+                    } else if (gesture === 'vulcan') {
+                        state.freeze = !state.freeze;
+                        updateFeatureDisplay('freeze', state.freeze);
+                        showGestureFeedback(state.freeze ? '❄️' : '🔥');
+                        playSound(400, 0.2, 'triangle');
                         state.gestureCooldown = 30;
                     }
                 } else if (state.gestureCooldown > 0) {
@@ -458,6 +850,7 @@
                         btnShape.material.emissiveIntensity = 1;
                         setTimeout(() => btnShape.material.emissiveIntensity = 0.3, 300);
                         showGestureFeedback('📐');
+                        playSound(800, 0.1, 'sine');
                     }
                     else if (Math.abs(x - btnDraw.position.x) < 6 && Math.abs(y - btnDraw.position.y) < 6) {
                         state.mode = 'DRAW';
@@ -469,11 +862,12 @@
                         btnDraw.material.emissiveIntensity = 1;
                         setTimeout(() => btnDraw.material.emissiveIntensity = 0.3, 300);
                         showGestureFeedback('✏️');
+                        playSound(600, 0.1, 'triangle');
                     }
                 }
 
                 // Shape Mode Logic
-                if (state.mode === 'SHAPE') {
+                if (state.mode === 'SHAPE' && !state.freeze) {
                     if (state.swipeCooldown <= 0) {
                         if (state.velocity > CONFIG.swipeThreshold) {
                             state.currentShapeIdx = (state.currentShapeIdx + 1) % shapeKeys.length;
@@ -500,7 +894,6 @@
                         if (currentLine) endStroke();
                     }
 
-                    // Swipe to clear
                     if (state.swipeCooldown <= 0 && Math.abs(state.velocity) > CONFIG.swipeThreshold * 1.2) {
                         clearDrawing();
                         state.swipeCooldown = 40;
@@ -508,33 +901,110 @@
                         state.swipeCooldown--;
                     }
                 }
+
+                // Particle trails
+                if (state.particleTrails) {
+                    trailCtx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+                    trailCtx.fillRect(0, 0, trailCanvas.width, trailCanvas.height);
+                    trailCtx.fillStyle = 'rgba(0, 255, 204, 0.5)';
+                    trailCtx.beginPath();
+                    trailCtx.arc(
+                        (idxFinger.x) * trailCanvas.width,
+                        (idxFinger.y) * trailCanvas.height,
+                        5,
+                        0,
+                        Math.PI * 2
+                    );
+                    trailCtx.fill();
+                }
             }
         }
 
         // --- ANIMATION LOOP ---
+        let frameCount = 0;
         function animate() {
             requestAnimationFrame(animate);
 
-            const positionsArr = geometry.attributes.position.array;
-            for (let i = 0; i < CONFIG.particleCount; i++) {
-                const idx = i * 3;
-                positionsArr[idx] += (targetPositions[idx] - positionsArr[idx]) * 0.08;
-                positionsArr[idx+1] += (targetPositions[idx+1] - positionsArr[idx+1]) * 0.08;
-                positionsArr[idx+2] += (targetPositions[idx+2] - positionsArr[idx+2]) * 0.08;
+            // FPS Counter
+            const now = Date.now();
+            const delta = now - state.lastFrameTime;
+            if (delta > 0) {
+                state.fps = Math.round(1000 / delta);
+                document.getElementById('fps-counter').innerText = state.fps;
             }
-            geometry.attributes.position.needsUpdate = true;
+            state.lastFrameTime = now;
 
-            if (state.mode === 'SHAPE') {
-                if (state.autoRotate) {
-                    particleSystem.rotation.y += 0.005;
-                    particleSystem.rotation.x += 0.002;
-                } else if (Math.abs(state.velocity) < 0.3) {
-                    particleSystem.rotation.y += (state.hand.x * 0.001);
-                    particleSystem.rotation.x -= (state.hand.y * 0.001);
+            if (!state.freeze) {
+                const positionsArr = geometry.attributes.position.array;
+                for (let i = 0; i < CONFIG.particleCount; i++) {
+                    const idx = i * 3;
+
+                    // Apply velocities
+                    if (state.explosionActive) {
+                        positionsArr[idx] += velocities[idx];
+                        positionsArr[idx+1] += velocities[idx+1];
+                        positionsArr[idx+2] += velocities[idx+2];
+                        velocities[idx] *= 0.95;
+                        velocities[idx+1] *= 0.95;
+                        velocities[idx+2] *= 0.95;
+                    }
+
+                    // Gravity field
+                    if (state.gravityField && state.handCount > 0) {
+                        const dx = state.hand.x - positionsArr[idx];
+                        const dy = state.hand.y - positionsArr[idx+1];
+                        const dist = Math.sqrt(dx*dx + dy*dy) + 0.1;
+                        const force = 0.5 / (dist * dist);
+                        velocities[idx] += dx * force;
+                        velocities[idx+1] += dy * force;
+                        positionsArr[idx] += velocities[idx];
+                        positionsArr[idx+1] += velocities[idx+1];
+                        velocities[idx] *= 0.95;
+                        velocities[idx+1] *= 0.95;
+                    } else {
+                        // Normal morphing
+                        positionsArr[idx] += (targetPositions[idx] - positionsArr[idx]) * state.particleSpeed;
+                        positionsArr[idx+1] += (targetPositions[idx+1] - positionsArr[idx+1]) * state.particleSpeed;
+                        positionsArr[idx+2] += (targetPositions[idx+2] - positionsArr[idx+2]) * state.particleSpeed;
+                    }
+
+                    // Mirror mode
+                    if (state.mirrorMode) {
+                        positionsArr[idx] = -positionsArr[idx];
+                    }
+
+                    // Rainbow mode
+                    if (state.rainbowMode) {
+                        const hue = (frameCount * 0.001 + i / CONFIG.particleCount) % 1;
+                        const color = new THREE.Color().setHSL(hue, 1, 0.5);
+                        colors[idx] = color.r;
+                        colors[idx+1] = color.g;
+                        colors[idx+2] = color.b;
+                    }
+                }
+                geometry.attributes.position.needsUpdate = true;
+                if (state.rainbowMode) {
+                    geometry.attributes.color.needsUpdate = true;
                 }
 
-                const targetScale = Math.max(0.5, Math.min(3.0, state.pinchDist * 10)); 
-                particleSystem.scale.setScalar(THREE.MathUtils.lerp(particleSystem.scale.x, targetScale, 0.1));
+                if (state.mode === 'SHAPE') {
+                    if (state.autoRotate) {
+                        particleSystem.rotation.y += 0.005;
+                        particleSystem.rotation.x += 0.002;
+                    } else if (Math.abs(state.velocity) < 0.3) {
+                        particleSystem.rotation.y += (state.hand.x * 0.001);
+                        particleSystem.rotation.x -= (state.hand.y * 0.001);
+                    }
+
+                    // Pulsate
+                    if (state.pulsate) {
+                        const pulse = 1 + Math.sin(frameCount * 0.05) * 0.2;
+                        particleSystem.scale.setScalar(pulse);
+                    } else {
+                        const targetScale = Math.max(0.5, Math.min(3.0, state.pinchDist * 10)); 
+                        particleSystem.scale.setScalar(THREE.MathUtils.lerp(particleSystem.scale.x, targetScale, 0.1));
+                    }
+                }
             }
 
             const time = Date.now() * 0.001;
@@ -543,17 +1013,66 @@
             btnShape.position.y = -12 + Math.sin(time * 1.5) * 0.8;
             btnDraw.position.y = -12 + Math.sin(time * 1.5 + Math.PI) * 0.8;
 
-            // Pulse button emissive
             btnShape.material.emissiveIntensity = 0.3 + Math.sin(time * 2) * 0.1;
             btnDraw.material.emissiveIntensity = 0.3 + Math.sin(time * 2 + Math.PI) * 0.1;
 
+            // Glow effect
+            if (state.glowEffect) {
+                scene.fog.density = 0.012 + Math.sin(time * 2) * 0.005;
+            }
+
             renderer.render(scene, camera);
+            frameCount++;
+        }
+
+        // --- KEYBOARD SHORTCUTS ---
+        window.addEventListener('keydown', (e) => {
+            switch(e.key.toLowerCase()) {
+                case 't':
+                    state.particleTrails = !state.particleTrails;
+                    updateFeatureDisplay('trails', state.particleTrails);
+                    if (!state.particleTrails) {
+                        trailCtx.clearRect(0, 0, trailCanvas.width, trailCanvas.height);
+                    }
+                    break;
+                case 's':
+                    state.soundEnabled = !state.soundEnabled;
+                    updateFeatureDisplay('sound', state.soundEnabled);
+                    break;
+                case 'g':
+                    state.glowEffect = !state.glowEffect;
+                    updateFeatureDisplay('glow', state.glowEffect);
+                    break;
+                case 'm':
+                    state.musicMode = !state.musicMode;
+                    updateFeatureDisplay('music', state.musicMode);
+                    break;
+                case 'r':
+                    state.rainbowMode = !state.rainbowMode;
+                    updateFeatureDisplay('rainbow', state.rainbowMode);
+                    break;
+                case 'p':
+                    state.pulsate = !state.pulsate;
+                    updateFeatureDisplay('pulsate', state.pulsate);
+                    break;
+            }
+        });
+
+        // --- UI TOGGLE ---
+        function toggleUI() {
+            const ui = document.getElementById('ui');
+            ui.style.display = ui.style.display === 'none' ? 'block' : 'none';
         }
 
         // --- INITIALIZATION ---
         const videoElement = document.getElementById('video-input');
         const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
-        hands.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
+        hands.setOptions({ 
+            maxNumHands: 2, 
+            modelComplexity: 1, 
+            minDetectionConfidence: 0.5, 
+            minTrackingConfidence: 0.5 
+        });
         hands.onResults(onResults);
         
         const cameraUtils = new Camera(videoElement, {
@@ -567,6 +1086,8 @@
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
+            trailCanvas.width = window.innerWidth;
+            trailCanvas.height = window.innerHeight;
         });
 
     </script>
