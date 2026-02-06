@@ -2,103 +2,68 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>NebulaTouch v3: Symbiotic Core</title>
+    <title>NebulaTouch v4: Refined Core</title>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Courier New', Courier, monospace; }
         canvas { display: block; }
         
-        /* UI OVERLAY */
-        #hud {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        /* MINIMAL UI */
+        #ui-layer {
+            position: absolute; top: 20px; left: 20px;
             pointer-events: none;
-            display: flex; flex-direction: column; justify-content: space-between;
-            padding: 20px; box-sizing: border-box;
+            color: rgba(255, 255, 255, 0.7);
+            z-index: 10;
         }
-
-        .hud-panel {
-            background: rgba(10, 20, 40, 0.7);
-            border: 1px solid rgba(0, 255, 200, 0.3);
-            backdrop-filter: blur(10px);
-            padding: 15px;
-            border-radius: 8px;
-            color: #0ff;
-            max-width: 300px;
-            pointer-events: auto; /* Allow clicking buttons */
-        }
-
-        h1 { margin: 0 0 10px 0; font-size: 1.1rem; letter-spacing: 2px; text-transform: uppercase; color: #fff; }
-        p { margin: 5px 0; font-size: 0.85rem; color: #aaa; display: flex; justify-content: space-between; }
+        h1 { margin: 0; font-size: 1rem; letter-spacing: 3px; color: #00ffcc; text-shadow: 0 0 10px rgba(0,255,204,0.5); }
+        p { font-size: 0.8rem; margin: 5px 0; }
         
-        .status-badge {
-            background: #004433; color: #00ffcc; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: bold;
+        #status-text {
+            position: absolute; bottom: 30px; left: 50%;
+            transform: translateX(-50%);
+            color: #fff; font-size: 1.2rem;
+            text-shadow: 0 0 10px #00ffcc;
+            opacity: 0.8;
+            pointer-events: none;
         }
 
-        #active-gesture {
-            font-size: 1.5rem; color: white; text-align: center; 
-            text-shadow: 0 0 20px #00ffcc; letter-spacing: 3px;
-            position: absolute; top: 10%; left: 50%; transform: translateX(-50%);
-        }
-
-        /* BUTTONS */
-        .btn {
-            background: transparent; border: 1px solid #0ff; color: #0ff;
-            padding: 8px 16px; margin-top: 10px; cursor: pointer;
-            font-family: inherit; text-transform: uppercase; font-size: 0.75rem;
-            transition: all 0.3s; width: 100%;
-        }
-        .btn:hover { background: rgba(0, 255, 255, 0.2); }
-        .btn.active { background: #0ff; color: #000; box-shadow: 0 0 15px #0ff; }
-
-        /* INTRO SCREEN */
-        #intro {
+        /* START BUTTON OVERLAY */
+        #start-screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; z-index: 100;
+            background: rgba(0,0,0,0.9);
             display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 100;
         }
-        #intro button {
-            padding: 15px 40px; font-size: 1.2rem; background: #00ffcc; border: none;
-            color: #000; font-weight: bold; cursor: pointer; letter-spacing: 2px;
-            box-shadow: 0 0 30px rgba(0,255,204,0.5);
+        button {
+            background: transparent; border: 1px solid #00ffcc; color: #00ffcc;
+            padding: 15px 30px; font-size: 1rem; cursor: pointer;
+            font-family: inherit; letter-spacing: 2px;
+            transition: 0.3s;
         }
-        #intro button:hover { transform: scale(1.05); }
-
-        /* LOADING */
-        #loader { display: none; color: #0ff; margin-top: 20px; animation: blink 1s infinite; }
-        @keyframes blink { 50% { opacity: 0.5; } }
+        button:hover { background: #00ffcc; color: #000; box-shadow: 0 0 20px #00ffcc; }
         
-        video { display: none; }
+        #video-input { display: none; }
     </style>
 </head>
 <body>
 
-    <div id="intro">
-        <h1 style="font-size: 3rem; color: white; text-shadow: 0 0 20px cyan;">NEBULA TOUCH v3</h1>
-        <p style="color: #888; margin-bottom: 30px;">Webcam & Microphone Required for Full Experience</p>
-        <button onclick="startSystem()">INITIALIZE SYSTEM</button>
-        <div id="loader">CALIBRATING SENSORS...</div>
+    <div id="start-screen">
+        <h1 style="font-size: 2rem; margin-bottom: 20px;">NEBULA TOUCH v4</h1>
+        <p style="color: #aaa; margin-bottom: 30px;">Microphone & Camera Required</p>
+        <button onclick="startSystem()">ACTIVATE SYSTEM</button>
     </div>
 
-    <div id="hud">
-        <div class="hud-panel">
-            <h1>System Status</h1>
-            <p>Tracking: <span id="status-track" class="status-badge">SEARCHING</span></p>
-            <p>Microphone: <span id="status-mic" class="status-badge" style="background:#330000; color:#ff5555">OFF</span></p>
-            <p>Particles: <span class="status-badge">8000</span></p>
-            <hr style="border-color: rgba(0,255,255,0.2)">
-            <button id="btn-audio" class="btn" onclick="toggleAudio()">Enable Audio Reactor</button>
-        </div>
-
-        <div id="active-gesture"></div>
-
-        <div class="hud-panel" style="align-self: flex-end;">
-            <h1>Capabilities</h1>
-            <p>👐 <b>Dual Hands:</b> Gravity Well / Stretch</p>
-            <p>✌️ <b>Peace Sign:</b> Split Galaxy</p>
-            <p>✊ <b>Fist:</b> Chaos Explosion</p>
-            <p>☝️ <b>Index:</b> Comet Trail</p>
-            <p>🗣️ <b>Voice:</b> Pulse & Spin Speed</p>
+    <div id="ui-layer">
+        <h1>GESTURE OS</h1>
+        <p>State: <span id="state-log">Ready</span></p>
+        <p>Mic: <span id="mic-log">Inactive</span></p>
+        <div style="margin-top: 15px; font-size: 0.7rem; opacity: 0.5;">
+            [1 Hand] Rotate / Fist (Chaos) / Point (Trail)<br>
+            [2 Hands] Clap (BlackHole) / Stretch (Warp)<br>
+            [Voice] Speak to Pulse
         </div>
     </div>
+
+    <div id="status-text">WAITING FOR INPUT</div>
 
     <video id="video-input" playsinline></video>
 
@@ -108,411 +73,279 @@
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
 
     <script>
-        // --- CONFIGURATION ---
+        // --- SETUP ---
         const CONFIG = {
-            count: 8000,
-            colorPalettes: [
-                [new THREE.Color('#00ffff'), new THREE.Color('#ff00ff'), new THREE.Color('#ffffff')], // Cyber
-                [new THREE.Color('#ffaa00'), new THREE.Color('#ff0000'), new THREE.Color('#ffff00')], // Fire
-                [new THREE.Color('#aaddff'), new THREE.Color('#ffffff'), new THREE.Color('#8888ff')]  // Ice
-            ]
+            count: 7000, // Slightly fewer for cleaner look
+            particleSize: 0.15, // THIN and elegant
+            camZ: 35
         };
 
-        // --- GLOBAL STATE ---
-        const state = {
-            hands: [],
-            audioData: 0,
-            audioEnabled: false,
-            shapeIdx: 0,
-            paletteIdx: 0,
-            gesture: 'IDLE',
-            swipeCooldown: 0,
-            smoothHand: { x: 0, y: 0, z: 0 }, // For smoothing
-            particles: null
-        };
-
-        // --- AUDIO SYSTEM ---
-        let audioCtx, analyser, dataArray;
-        function initAudio() {
-            if (state.audioEnabled) return;
-            try {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-                    const source = audioCtx.createMediaStreamSource(stream);
-                    analyser = audioCtx.createAnalyser();
-                    analyser.fftSize = 64;
-                    source.connect(analyser);
-                    dataArray = new Uint8Array(analyser.frequencyBinCount);
-                    state.audioEnabled = true;
-                    document.getElementById('status-mic').innerText = "ACTIVE";
-                    document.getElementById('status-mic').style.backgroundColor = "#004400";
-                    document.getElementById('status-mic').style.color = "#00ff00";
-                    document.getElementById('btn-audio').classList.add('active');
-                });
-            } catch (e) {
-                console.error("Mic Error", e);
-            }
-        }
-        function toggleAudio() { initAudio(); }
-
-        function getAudioLevel() {
-            if (!state.audioEnabled || !analyser) return 0;
-            analyser.getByteFrequencyData(dataArray);
-            let sum = 0;
-            for(let i=0; i < dataArray.length; i++) sum += dataArray[i];
-            return sum / dataArray.length; // 0 to 255
-        }
-
-        // --- THREE.JS ENGINE ---
         const scene = new THREE.Scene();
         scene.fog = new THREE.FogExp2(0x000000, 0.02);
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-        camera.position.z = 30;
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+        camera.position.z = CONFIG.camZ;
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
         document.body.appendChild(renderer.domElement);
 
-        // PARTICLE SYSTEM
-        const geometry = new THREE.BufferGeometry();
-        const posArray = new Float32Array(CONFIG.count * 3);
-        const targetArray = new Float32Array(CONFIG.count * 3);
-        const colorArray = new Float32Array(CONFIG.count * 3);
-        const sizesArray = new Float32Array(CONFIG.count); // Individual sizes
-
-        for(let i=0; i<CONFIG.count*3; i++) {
-            posArray[i] = (Math.random()-0.5)*50;
-            targetArray[i] = posArray[i];
-            colorArray[i] = 1;
+        // --- AUDIO SYSTEM (Hidden but Functional) ---
+        let analyser, dataArray;
+        let audioFactor = 0;
+        
+        async function initAudio() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const source = audioCtx.createMediaStreamSource(stream);
+                analyser = audioCtx.createAnalyser();
+                analyser.fftSize = 64;
+                source.connect(analyser);
+                dataArray = new Uint8Array(analyser.frequencyBinCount);
+                document.getElementById('mic-log').innerText = "Listening...";
+            } catch (e) {
+                console.log("Audio disabled");
+            }
         }
-        for(let i=0; i<CONFIG.count; i++) sizesArray[i] = Math.random();
 
-        geometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-        geometry.setAttribute('target', new THREE.BufferAttribute(targetArray, 3));
-        geometry.setAttribute('color', new THREE.BufferAttribute(colorArray, 3));
-        geometry.setAttribute('size', new THREE.BufferAttribute(sizesArray, 1));
+        // --- PARTICLE SYSTEM (Clean Style) ---
+        const geometry = new THREE.BufferGeometry();
+        const positions = new Float32Array(CONFIG.count * 3);
+        const targetPositions = new Float32Array(CONFIG.count * 3);
+        const colors = new Float32Array(CONFIG.count * 3);
+        const originalColors = new Float32Array(CONFIG.count * 3);
 
-        // Custom Shader Material for Glow and Pulse
-        const sprite = new THREE.TextureLoader().load('https://threejs.org/examples/textures/sprites/spark1.png');
-        const material = new THREE.ShaderMaterial({
-            uniforms: {
-                pointTexture: { value: sprite },
-                globalSize: { value: 20.0 },
-                time: { value: 0 }
-            },
-            vertexShader: `
-                attribute float size;
-                attribute vec3 color;
-                varying vec3 vColor;
-                uniform float globalSize;
-                void main() {
-                    vColor = color;
-                    vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-                    gl_PointSize = size * globalSize * (30.0 / -mvPosition.z);
-                    gl_Position = projectionMatrix * mvPosition;
-                }
-            `,
-            fragmentShader: `
-                uniform sampler2D pointTexture;
-                varying vec3 vColor;
-                void main() {
-                    gl_FragColor = vec4(vColor, 1.0) * texture2D(pointTexture, gl_PointCoord);
-                }
-            `,
+        // Init: Galaxy Disc
+        for(let i=0; i<CONFIG.count; i++) {
+            const idx = i*3;
+            // Spiral Galaxy Logic
+            const r = Math.random() * 15;
+            const theta = i * 0.1 + (r * 0.5);
+            positions[idx] = r * Math.cos(theta);
+            positions[idx+1] = (Math.random()-0.5) * (r * 0.2); // Thin disc
+            positions[idx+2] = r * Math.sin(theta);
+            
+            targetPositions[idx] = positions[idx];
+            targetPositions[idx+1] = positions[idx+1];
+            targetPositions[idx+2] = positions[idx+2];
+
+            // Color: Cyan/Blue Mix
+            colors[idx] = 0.1; colors[idx+1] = 0.8; colors[idx+2] = 1.0;
+            if(Math.random()>0.8) { colors[idx]=1; colors[idx+1]=1; colors[idx+2]=1; } // White stars
+            
+            originalColors[idx] = colors[idx];
+            originalColors[idx+1] = colors[idx+1];
+            originalColors[idx+2] = colors[idx+2];
+        }
+
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+        // Use standard PointsMaterial (Cleaner than shader)
+        const sprite = new THREE.TextureLoader().load('https://threejs.org/examples/textures/sprites/disc.png');
+        const material = new THREE.PointsMaterial({
+            size: CONFIG.particleSize,
+            map: sprite,
+            vertexColors: true,
             blending: THREE.AdditiveBlending,
-            depthWrite: false,
-            transparent: true
+            transparent: true,
+            opacity: 0.8
         });
 
-        const particles = new THREE.Points(geometry, material);
-        scene.add(particles);
+        const particleSystem = new THREE.Points(geometry, material);
+        scene.add(particleSystem);
 
-        // TRAIL SYSTEM (Index Finger)
+        // --- TRAIL SYSTEM (Thinner) ---
         const trailGeo = new THREE.BufferGeometry();
-        const trailMaxPoints = 50;
-        const trailPositions = new Float32Array(trailMaxPoints * 3);
-        trailGeo.setAttribute('position', new THREE.BufferAttribute(trailPositions, 3));
-        const trailMat = new THREE.LineBasicMaterial({ color: 0xff00ff, transparent: true, opacity: 0.5 });
+        const trailPos = new Float32Array(100 * 3).fill(0);
+        trailGeo.setAttribute('position', new THREE.BufferAttribute(trailPos, 3));
+        // Thinner line, less opacity
+        const trailMat = new THREE.LineBasicMaterial({ color: 0x00ffcc, opacity: 0.3, transparent: true });
         const trailLine = new THREE.Line(trailGeo, trailMat);
         scene.add(trailLine);
-        let trailIdx = 0;
 
-        // --- SHAPE MATH ---
-        function getShapePos(type, i) {
-            let x,y,z;
-            const idx = i; 
-            // Normalized 0-1
-            const r1 = Math.random(); const r2 = Math.random();
-
-            if (type === 'sphere') {
-                const r = 10;
-                const theta = r1 * Math.PI * 2;
-                const phi = Math.acos(2 * r2 - 1);
-                x = r * Math.sin(phi) * Math.cos(theta);
-                y = r * Math.sin(phi) * Math.sin(theta);
-                z = r * Math.cos(phi);
-            } else if (type === 'galaxy') {
-                const arms = 5;
-                const spin = i * 0.01;
-                const r = r1 * 15;
-                const angle = spin + (r * 0.2);
-                x = r * Math.cos(angle);
-                y = (Math.random()-0.5) * (r*0.5); // flatten
-                z = r * Math.sin(angle);
-            } else if (type === 'cube') {
-                const s = 15;
-                x = (Math.random()-0.5)*s; 
-                y = (Math.random()-0.5)*s; 
-                z = (Math.random()-0.5)*s; 
-            }
-            return {x,y,z};
-        }
-
-        const shapes = ['galaxy', 'sphere', 'cube'];
-        
-        function updateTargets() {
-            const shape = shapes[state.shapeIdx];
-            const t = particles.geometry.attributes.target.array;
-            for(let i=0; i<CONFIG.count; i++) {
-                const p = getShapePos(shape, i);
-                t[i*3] = p.x;
-                t[i*3+1] = p.y;
-                t[i*3+2] = p.z;
-            }
-        }
-        updateTargets(); // Init
-
-        // --- LOGIC LOOP ---
-        const clock = new THREE.Clock();
-        
-        function animate() {
-            requestAnimationFrame(animate);
-            const time = clock.getElapsedTime();
-            const positions = particles.geometry.attributes.position.array;
-            const targets = particles.geometry.attributes.target.array;
-            const colors = particles.geometry.attributes.color.array;
-
-            // 1. Audio Analysis
-            const audioLevel = getAudioLevel(); // 0-255
-            const audioFactor = audioLevel / 255; // 0.0-1.0
-            
-            // Audio Reaction: Pulse Size
-            material.uniforms.globalSize.value = 20.0 + (audioFactor * 30.0);
-            
-            // 2. Gesture Logic
-            let rotSpeed = 0.05 + (audioFactor * 0.2); // Voice speeds up rotation
-            let chaos = 0;
-            let gravityCenter = null;
-            let stretchFactor = 1;
-            let splitMode = false;
-
-            // Detect Gestures
-            if (state.hands.length > 0) {
-                const h1 = state.hands[0];
-                const h2 = state.hands[1];
-
-                // SMOOTHING
-                state.smoothHand.x += (h1.x - state.smoothHand.x) * 0.1;
-                state.smoothHand.y += (h1.y - state.smoothHand.y) * 0.1;
-                
-                // --- TWO HAND GESTURES ---
-                if (state.hands.length === 2) {
-                    const dx = h1.x - h2.x;
-                    const dy = h1.y - h2.y;
-                    const dist = Math.sqrt(dx*dx + dy*dy);
-
-                    if (dist < 5) {
-                        state.gesture = "BLACK HOLE";
-                        gravityCenter = { x: (h1.x+h2.x)/2, y: (h1.y+h2.y)/2, z: 0 };
-                        chaos = 2; // Shake
-                    } else if (dist > 15) {
-                        state.gesture = "COSMIC STRETCH";
-                        stretchFactor = 1 + (dist - 15) * 0.1;
-                    } else {
-                        state.gesture = "DUAL SYNC";
-                    }
-                } 
-                // --- ONE HAND GESTURES ---
-                else {
-                    // Check Finger States (Simple heuristics)
-                    // H1.fingers = [Thumb, Index, Middle, Ring, Pinky] (1=Open, 0=Closed)
-                    
-                    if (h1.isFist) {
-                        state.gesture = "CHAOS EXPLOSION";
-                        chaos = 5;
-                    } else if (h1.isPeace) {
-                        state.gesture = "SPLIT REALITY";
-                        splitMode = true;
-                    } else {
-                        state.gesture = "ORBITAL CONTROL";
-                        // Trail Logic
-                        if (h1.indexOpen) {
-                            // Update Trail
-                            for(let j=trailMaxPoints*3-1; j>=3; j--) trailPositions[j] = trailPositions[j-3];
-                            trailPositions[0] = h1.rawX * 20; // Scale up for visibility
-                            trailPositions[1] = h1.rawY * 20;
-                            trailPositions[2] = 5;
-                            trailLine.geometry.attributes.position.needsUpdate = true;
-                        }
-                    }
-                    
-                    // Interaction: Rotate
-                    particles.rotation.y += (state.smoothHand.x * 0.005);
-                    particles.rotation.x -= (state.smoothHand.y * 0.005);
-                }
-            } else {
-                state.gesture = "IDLE (WAITING)";
-                // Auto Rotate
-                particles.rotation.y += 0.002;
-            }
-
-            // Update HUD
-            document.getElementById('active-gesture').innerText = state.gesture;
-
-            // 3. Physics & Morph Loop
-            const pal = CONFIG.colorPalettes[state.paletteIdx];
-            
-            for(let i=0; i<CONFIG.count; i++) {
-                const idx = i*3;
-                let tx = targets[idx];
-                let ty = targets[idx+1];
-                let tz = targets[idx+2];
-
-                // MODIFIER: STRETCH
-                tx *= stretchFactor;
-
-                // MODIFIER: SPLIT (Peace Sign)
-                if (splitMode) {
-                    if (ty > 0) ty += 5; else ty -= 5;
-                }
-
-                // MODIFIER: GRAVITY (Black Hole)
-                if (gravityCenter) {
-                    tx = (tx * 0.9) + (gravityCenter.x * 0.1);
-                    ty = (ty * 0.9) + (gravityCenter.y * 0.1);
-                    tz = (tz * 0.9);
-                }
-
-                // MODIFIER: CHAOS (Fist/Voice)
-                if (chaos > 0) {
-                    tx += (Math.random()-0.5)*chaos;
-                    ty += (Math.random()-0.5)*chaos;
-                    tz += (Math.random()-0.5)*chaos;
-                }
-
-                // Apply Audio Color Pulse
-                // Mix base color with audio heat
-                const baseC = pal[i % 3];
-                if (audioFactor > 0.3 && i % 10 === 0) {
-                    colors[idx] = 1; colors[idx+1] = 1; colors[idx+2] = 1; // Flash white
-                } else {
-                    colors[idx] += (baseC.r - colors[idx]) * 0.05;
-                    colors[idx+1] += (baseC.g - colors[idx+1]) * 0.05;
-                    colors[idx+2] += (baseC.b - colors[idx+2]) * 0.05;
-                }
-
-                // PHYSICS INTEGRATION (Lerp)
-                positions[idx] += (tx - positions[idx]) * 0.05;
-                positions[idx+1] += (ty - positions[idx+1]) * 0.05;
-                positions[idx+2] += (tz - positions[idx+2]) * 0.05;
-            }
-
-            particles.geometry.attributes.position.needsUpdate = true;
-            particles.geometry.attributes.color.needsUpdate = true;
-            renderer.render(scene, camera);
-        }
-
-        // --- MEDIAPIPE ---
-        const videoElement = document.getElementById('video-input');
-        
-        function onResults(results) {
-            document.getElementById('loader').style.display = 'none';
-            document.getElementById('intro').style.display = 'none';
-            
-            state.hands = [];
-
-            if (results.multiHandLandmarks) {
-                document.getElementById('status-track').innerText = "LOCKED (" + results.multiHandLandmarks.length + ")";
-                document.getElementById('status-track').style.backgroundColor = "#00ffcc";
-                document.getElementById('status-track').style.color = "#000";
-
-                for (const landmarks of results.multiHandLandmarks) {
-                    // Coordinates map (0-1) -> World (-20 to 20)
-                    const x = (landmarks[8].x - 0.5) * -40; 
-                    const y = (landmarks[8].y - 0.5) * -30;
-                    
-                    // Gesture Analysis
-                    // Is Fist? (Tips 8, 12, 16, 20 below Knuckles 5, 9, 13, 17)
-                    // Simplified: Distance thumb-index is small AND index-pinky is small
-                    const thumbTip = landmarks[4];
-                    const indexTip = landmarks[8];
-                    const middleTip = landmarks[12];
-                    const ringTip = landmarks[16];
-                    const pinkyTip = landmarks[20];
-                    const wrist = landmarks[0];
-
-                    const dThumbIndex = Math.hypot(thumbTip.x-indexTip.x, thumbTip.y-indexTip.y);
-                    const dIndexWrist = Math.hypot(indexTip.x-wrist.x, indexTip.y-wrist.y);
-                    const dPinkyWrist = Math.hypot(pinkyTip.x-wrist.x, pinkyTip.y-wrist.y);
-                    
-                    const isFist = dIndexWrist < 0.2 && dPinkyWrist < 0.2;
-                    const isPeace = !isFist && landmarks[8].y < landmarks[6].y && landmarks[12].y < landmarks[10].y && landmarks[16].y > landmarks[14].y;
-
-                    state.hands.push({
-                        x: x, y: y,
-                        rawX: (landmarks[8].x - 0.5) * -1, rawY: (landmarks[8].y - 0.5) * -1,
-                        isFist: isFist,
-                        isPeace: isPeace,
-                        indexOpen: !isFist
-                    });
-                }
-            } else {
-                 document.getElementById('status-track').innerText = "SEARCHING...";
-                 document.getElementById('status-track').style.backgroundColor = "#555";
-                 document.getElementById('status-track').style.color = "#aaa";
-            }
-        }
-
-        const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
-        hands.setOptions({
-            maxNumHands: 2, // ENABLE 2 HANDS
-            modelComplexity: 1,
-            minDetectionConfidence: 0.6,
-            minTrackingConfidence: 0.6
-        });
-        hands.onResults(onResults);
-
-        const cameraUtils = new Camera(videoElement, {
-            onFrame: async () => { await hands.send({image: videoElement}); },
-            width: 640, height: 480
-        });
+        // --- LOGIC ---
+        const state = {
+            hands: [],
+            mode: 'IDLE',
+            smoothHand: {x:0, y:0}
+        };
 
         function startSystem() {
-            document.getElementById('loader').style.display = 'block';
-            cameraUtils.start();
+            document.getElementById('start-screen').style.display = 'none';
             initAudio();
+            initCamera();
             animate();
         }
 
-        // SWIPE DETECTION (Simple)
-        let lastX = 0;
-        setInterval(() => {
-            if(state.hands.length > 0) {
-                const currX = state.hands[0].x;
-                const diff = currX - lastX;
-                if (diff > 5) { // Fast Swipe Right
-                    state.shapeIdx = (state.shapeIdx + 1) % shapes.length;
-                    updateTargets();
-                }
-                lastX = currX;
-            }
-        }, 300);
+        // --- HAND TRACKING ---
+        function onResults(results) {
+            state.hands = [];
+            
+            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                document.getElementById('state-log').innerText = "Tracking " + results.multiHandLandmarks.length + " Hand(s)";
+                
+                for (const lm of results.multiHandLandmarks) {
+                    // Map Coordinates
+                    const x = (lm[8].x - 0.5) * -40;
+                    const y = (lm[8].y - 0.5) * -30;
+                    
+                    // Simple Fist Detection
+                    const d = Math.hypot(lm[8].x - lm[0].x, lm[8].y - lm[0].y);
+                    const isFist = d < 0.3; // Normalized coord distance
 
+                    // Index Finger Pointing? (Tip above knuckle)
+                    const isPointing = !isFist && lm[8].y < lm[6].y;
+
+                    state.hands.push({ x, y, isFist, isPointing });
+                }
+            } else {
+                document.getElementById('state-log').innerText = "Searching...";
+            }
+        }
+
+        function initCamera() {
+            const video = document.getElementById('video-input');
+            const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
+            hands.setOptions({ maxNumHands: 2, minDetectionConfidence: 0.6, minTrackingConfidence: 0.6 });
+            hands.onResults(onResults);
+            
+            const camera = new Camera(video, {
+                onFrame: async () => { await hands.send({image: video}); },
+                width: 640, height: 480
+            });
+            camera.start();
+        }
+
+        // --- ANIMATION LOOP ---
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // 1. Process Audio
+            if (analyser) {
+                analyser.getByteFrequencyData(dataArray);
+                let sum = 0;
+                for(let i=0; i<dataArray.length; i++) sum += dataArray[i];
+                // Smooth audio factor
+                const targetFactor = sum / dataArray.length / 255; 
+                audioFactor += (targetFactor - audioFactor) * 0.1;
+            }
+
+            // Audio Visuals (Subtle pulse)
+            material.size = CONFIG.particleSize + (audioFactor * 0.2); // Only slightly get bigger
+
+            // 2. Gesture Logic
+            let rotX = 0, rotY = 0;
+            let explosion = 0;
+            let stretch = 1;
+            let gravity = null;
+
+            if (state.hands.length === 1) {
+                const h = state.hands[0];
+                state.smoothHand.x += (h.x - state.smoothHand.x) * 0.1;
+                state.smoothHand.y += (h.y - state.smoothHand.y) * 0.1;
+
+                rotY = state.smoothHand.x * 0.002;
+                rotX = state.smoothHand.y * 0.002;
+
+                if (h.isFist) {
+                    document.getElementById('status-text').innerText = "CHAOS MODE";
+                    explosion = 2; // Chaos magnitude
+                } else if (h.isPointing) {
+                    document.getElementById('status-text').innerText = "DRAWING TRAIL";
+                    // Update Trail
+                    const posAttr = trailLine.geometry.attributes.position;
+                    const arr = posAttr.array;
+                    // Shift values down
+                    for(let i=299; i>=3; i--) arr[i] = arr[i-3];
+                    arr[0] = h.x; arr[1] = h.y; arr[2] = 5;
+                    posAttr.needsUpdate = true;
+                } else {
+                    document.getElementById('status-text').innerText = "ROTATING";
+                }
+
+            } else if (state.hands.length === 2) {
+                const h1 = state.hands[0];
+                const h2 = state.hands[1];
+                const dist = Math.hypot(h1.x - h2.x, h1.y - h2.y);
+
+                if (dist < 8) {
+                    document.getElementById('status-text').innerText = "BLACK HOLE";
+                    gravity = { x: (h1.x+h2.x)/2, y: (h1.y+h2.y)/2 };
+                } else if (dist > 15) {
+                    document.getElementById('status-text').innerText = "WARPING SPACE";
+                    stretch = 1 + (dist-15)*0.05;
+                } else {
+                    document.getElementById('status-text').innerText = "DUAL HANDS DETECTED";
+                }
+            } else {
+                // IDLE
+                document.getElementById('status-text').innerText = "";
+                rotY = 0.002; // Auto spin
+            }
+
+            // Apply Rotation
+            particleSystem.rotation.y += rotY;
+            particleSystem.rotation.x -= rotX;
+
+            // 3. Physics Update
+            const pos = geometry.attributes.position.array;
+            const target = geometry.attributes.target.array;
+            const col = geometry.attributes.color.array;
+
+            for(let i=0; i<CONFIG.count; i++) {
+                const idx = i*3;
+                let tx = target[idx];
+                let ty = target[idx+1];
+                let tz = target[idx+2];
+
+                // Modifiers
+                if (stretch !== 1) { tx *= stretch; ty *= stretch; tz *= stretch; }
+                
+                if (gravity) {
+                    // Pull towards center
+                    tx = tx * 0.9 + gravity.x * 0.1;
+                    ty = ty * 0.9 + gravity.y * 0.1;
+                    tz = tz * 0.9;
+                }
+
+                if (explosion > 0) {
+                    tx += (Math.random()-0.5) * explosion * 10;
+                    ty += (Math.random()-0.5) * explosion * 10;
+                    tz += (Math.random()-0.5) * explosion * 10;
+                }
+
+                // Audio Color Pulse (Subtle)
+                if (audioFactor > 0.4 && i % 20 === 0) {
+                    col[idx] = 1; col[idx+1] = 0; col[idx+2] = 0.5; // Pink accents on beat
+                } else {
+                    // Return to original
+                    col[idx] += (originalColors[idx] - col[idx]) * 0.05;
+                    col[idx+1] += (originalColors[idx+1] - col[idx+1]) * 0.05;
+                    col[idx+2] += (originalColors[idx+2] - col[idx+2]) * 0.05;
+                }
+
+                // Lerp Position
+                pos[idx] += (tx - pos[idx]) * 0.08;
+                pos[idx+1] += (ty - pos[idx+1]) * 0.08;
+                pos[idx+2] += (tz - pos[idx+2]) * 0.08;
+            }
+
+            geometry.attributes.position.needsUpdate = true;
+            geometry.attributes.color.needsUpdate = true;
+
+            renderer.render(scene, camera);
+        }
+
+        // Resize
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
+
     </script>
 </body>
 </html>
