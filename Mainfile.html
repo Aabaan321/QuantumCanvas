@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Interactive 3D Particle System</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #050505; font-family: 'Courier New', Courier, monospace; }
+        canvas { display: block; }
+        #video-input { position: absolute; top: 0; left: 0; opacity: 0; pointer-events: none; }
+        #ui {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: #00ffcc;
+            pointer-events: none;
+            z-index: 10;
+        }
+        h1 { margin: 0; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 2px; }
+        p { font-size: 0.8rem; opacity: 0.8; }
+        .loading {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 1.5rem;
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse { 0% { opacity: 0.5; } 100% { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <div id="ui">
+        <h1>Particle Morph System</h1>
+        <p>Status: <span id="status">Initializing Camera...</span></p>
+        <p>• Move Hand to Rotate</p>
+        <p>• Pinch (Thumb+Index) to Explode/Interact</p>
+        <p>• Shapes cycle automatically</p>
+    </div>
+    
+    <div id="loading" class="loading">Loading AI Models...</div>
+
+    <video id="video-input" playsinline></video>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+
+    <script>
+        // --- CONFIGURATION ---
+        const PARTICLE_COUNT = 8000;
+        const PARTICLE_SIZE = 0.15;
+        const CAM_Z = 30;
+        
+        // --- THREE.JS SETUP ---
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x050505, 0.02);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = CAM_Z;
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        document.body.appendChild(renderer.domElement);
+
+        // --- PARTICLE SYSTEM STATE ---
+        const particlesGeometry = new THREE.BufferGeometry();
+        const positions = new Float32Array(PARTICLE_COUNT * 3);
+        const targetPositions = new Float32Array(PARTICLE_COUNT * 3);
+        const colors = new Float32Array(PARTICLE_COUNT * 3);
+        const originalColors = new Float32Array(PARTICLE_COUNT * 3);
+
+        // Initialize random positions
+        for (let i = 0; i < PARTICLE_COUNT * 3; i++) {
+            positions[i] = (Math.random() - 0.5) * 50;
+            targetPositions[i] = positions[i];
+            colors[i] = 1; // Start white
+            originalColors[i] = 1;
+        }
+
+        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        particlesGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+        // Use a glowing sprite for particles
+        const sprite = new THREE.TextureLoader().load('https://threejs.org/examples/textures/sprites/disc.png');
+        const material = new THREE.PointsMaterial({
+            size: PARTICLE_SIZE,
+            map: sprite,
+            vertexColors: true,
+            alphaTest: 0.5,
+            transparent: true,
+            opacity: 0.8,
+            blending: THREE.AdditiveBlending
+        });
+
+        const particleSystem = new THREE.Points(particlesGeometry, material);
+        scene.add(particleSystem);
+
+        // --- SHAPE GENERATORS ---
+        // Helper to set targets based on a math function
+        function setShape(type) {
+            const tempPos = [];
+            for (let i = 0; i < PARTICLE_COUNT; i++) {
+                let x, y, z, r, theta, phi;
+                const idx = i * 3;
+
+                switch (type) {
+                    case 'sphere':
+                        r = 10;
+                        theta = Math.random() * Math.PI * 2;
+                        phi = Math.acos((Math.random() * 2) - 1);
+                        x = r * Math.sin(phi) * Math.cos(theta);
+                        y = r * Math.sin(phi) * Math.sin(theta);
+                        z = r * Math.cos(phi);
+                        // Color: Cyan/Blue
+                        colors[idx] = 0.1; colors[idx+1] = 0.8; colors[idx+2] = 1.0; 
+                        break;
+
+                    case 'heart':
+                        // Parametric Heart
+                        let t = Math.random() * Math.PI * 2;
+                        // Distribute points to fill volume slightly
+                        let scale = 0.5;
+                        x = 16 * Math.pow(Math.sin(t), 3);
+                        y = 13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t);
+                        z = (Math.random() - 0.5) * 5; // Thickness
+                        x *= scale; y *= scale;
+                        // Color: Red/Pink
+                        colors[idx] = 1.0; colors[idx+1] = 0.1; colors[idx+2] = 0.3; 
+                        break;
+
+                    case 'flower':
+                        // Rose curve
+                        let k = 4; // Petals
+                        theta = Math.random() * Math.PI * 2;
+                        r = 8 * Math.cos(k * theta);
+                        x = r * Math.cos(theta);
+                        y = r * Math.sin(theta);
+                        z = (Math.random() - 0.5) * 4;
+                        // Color: Purple/Gold
+                        colors[idx] = 0.8; colors[idx+1] = 0.2; colors[idx+2] = 0.9; 
+                        break;
+                    
+                    case 'saturn':
+                        if (i < PARTICLE_COUNT * 0.4) {
+                            // Planet Body
+                            r = 5;
+                            theta = Math.random() * Math.PI * 2;
+                            phi = Math.acos((Math.random() * 2) - 1);
+                            x = r * Math.sin(phi) * Math.cos(theta);
+                            y = r * Math.sin(phi) * Math.sin(theta);
+                            z = r * Math.cos(phi);
+                            colors[idx] = 0.9; colors[idx+1] = 0.7; colors[idx+2] = 0.2; 
+                        } else {
+                            // Rings
+                            let innerR = 7;
+                            let outerR = 12;
+                            r = innerR + Math.random() * (outerR - innerR);
+                            theta = Math.random() * Math.PI * 2;
+                            x = r * Math.cos(theta);
+                            z = r * Math.sin(theta);
+                            y = (Math.random() - 0.5) * 0.5; // Thin ring
+                            colors[idx] = 0.6; colors[idx+1] = 0.6; colors[idx+2] = 0.7; 
+                        }
+                        break;
+                }
+                
+                targetPositions[idx] = x;
+                targetPositions[idx+1] = y;
+                targetPositions[idx+2] = z;
+                
+                originalColors[idx] = colors[idx];
+                originalColors[idx+1] = colors[idx+1];
+                originalColors[idx+2] = colors[idx+2];
+            }
+            particlesGeometry.attributes.color.needsUpdate = true;
+        }
+
+        // --- INTERACTION LOGIC ---
+        let handPosition = { x: 0, y: 0, z: 0 };
+        let isPinching = false;
+        let pinchStrength = 0;
+
+        // Shape Cycling
+        const shapes = ['sphere', 'heart', 'saturn', 'flower'];
+        let currentShapeIndex = 0;
+        
+        // Initial Shape
+        setShape(shapes[0]);
+        
+        // Cycle shapes every 5 seconds
+        setInterval(() => {
+            currentShapeIndex = (currentShapeIndex + 1) % shapes.length;
+            setShape(shapes[currentShapeIndex]);
+            document.getElementById('status').innerText = `Morphing to: ${shapes[currentShapeIndex].toUpperCase()}`;
+        }, 5000);
+
+        // --- MEDIAPIPE HAND TRACKING ---
+        const videoElement = document.getElementById('video-input');
+
+        function onResults(results) {
+            document.getElementById('loading').style.display = 'none';
+
+            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                const landmarks = results.multiHandLandmarks[0];
+                
+                // 1. Get Hand Position (Index Finger Tip - Landmark 8)
+                // Remap normalized coords (0 to 1) to World Coords
+                // Web coordinates: X goes right, Y goes down. ThreeJS: Y goes up.
+                let x = (landmarks[8].x - 0.5) * -20; // Invert X for mirror effect
+                let y = (landmarks[8].y - 0.5) * -20; // Invert Y
+                
+                // Smoothing the hand movement
+                handPosition.x += (x - handPosition.x) * 0.1;
+                handPosition.y += (y - handPosition.y) * 0.1;
+
+                // 2. Detect Pinch (Thumb Tip 4 & Index Tip 8)
+                const thumb = landmarks[4];
+                const index = landmarks[8];
+                const distance = Math.sqrt(
+                    Math.pow(thumb.x - index.x, 2) + 
+                    Math.pow(thumb.y - index.y, 2)
+                );
+
+                // If distance is small, it's a pinch
+                if (distance < 0.05) {
+                    isPinching = true;
+                    pinchStrength = THREE.MathUtils.lerp(pinchStrength, 1, 0.1);
+                } else {
+                    isPinching = false;
+                    pinchStrength = THREE.MathUtils.lerp(pinchStrength, 0, 0.1);
+                }
+
+            } else {
+                // No hand detected, slowly recenter or idle
+                pinchStrength = THREE.MathUtils.lerp(pinchStrength, 0, 0.05);
+            }
+        }
+
+        const hands = new Hands({locateFile: (file) => {
+            return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
+        }});
+
+        hands.setOptions({
+            maxNumHands: 1,
+            modelComplexity: 1,
+            minDetectionConfidence: 0.5,
+            minTrackingConfidence: 0.5
+        });
+
+        hands.onResults(onResults);
+
+        const cameraUtils = new Camera(videoElement, {
+            onFrame: async () => {
+                await hands.send({image: videoElement});
+            },
+            width: 640,
+            height: 480
+        });
+        cameraUtils.start();
+
+        // --- ANIMATION LOOP ---
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            const time = clock.getElapsedTime();
+            const positionsArr = particlesGeometry.attributes.position.array;
+            const colorsArr = particlesGeometry.attributes.color.array;
+
+            // Rotation based on mouse/hand
+            particleSystem.rotation.y = time * 0.1 + (handPosition.x * 0.05);
+            particleSystem.rotation.x = (handPosition.y * 0.05);
+
+            for (let i = 0; i < PARTICLE_COUNT; i++) {
+                const idx = i * 3;
+                
+                // 1. Get Target Position
+                let tx = targetPositions[idx];
+                let ty = targetPositions[idx+1];
+                let tz = targetPositions[idx+2];
+
+                // 2. Apply Pinch Effect (Explosion / Expansion)
+                // If pinching, push particles outward from center or random noise
+                if (pinchStrength > 0.1) {
+                    const noise = Math.sin(i * 0.1 + time * 5) * 5 * pinchStrength;
+                    tx += tx * pinchStrength * 2 + noise;
+                    ty += ty * pinchStrength * 2 + noise;
+                    tz += tz * pinchStrength * 2 + noise;
+
+                    // Turn particles yellow/white on pinch
+                    colorsArr[idx] = THREE.MathUtils.lerp(originalColors[idx], 1, pinchStrength);
+                    colorsArr[idx+1] = THREE.MathUtils.lerp(originalColors[idx+1], 1, pinchStrength);
+                    colorsArr[idx+2] = THREE.MathUtils.lerp(originalColors[idx+2], 0, pinchStrength);
+                } else {
+                    // Return to original color
+                    colorsArr[idx] = THREE.MathUtils.lerp(colorsArr[idx], originalColors[idx], 0.05);
+                    colorsArr[idx+1] = THREE.MathUtils.lerp(colorsArr[idx+1], originalColors[idx+1], 0.05);
+                    colorsArr[idx+2] = THREE.MathUtils.lerp(colorsArr[idx+2], originalColors[idx+2], 0.05);
+                }
+
+                // 3. Morphing Logic (Linear Interpolation)
+                // Move current position toward target position
+                const speed = 0.05; // Morph speed
+                positionsArr[idx] += (tx - positionsArr[idx]) * speed;
+                positionsArr[idx+1] += (ty - positionsArr[idx+1]) * speed;
+                positionsArr[idx+2] += (tz - positionsArr[idx+2]) * speed;
+            }
+
+            particlesGeometry.attributes.position.needsUpdate = true;
+            particlesGeometry.attributes.color.needsUpdate = true;
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        // Handle Window Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+    </script>
+</body>
+</html>
