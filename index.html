@@ -2,1085 +2,163 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>NebulaTouch v4: Enhanced Detection</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NebulaTouch v5: Crystal Expanse</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
-        
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
-        body { 
-            margin: 0; 
-            overflow: hidden; 
-            background: radial-gradient(ellipse at center, #0a0a1a 0%, #050505 100%);
-            font-family: 'Orbitron', 'Courier New', monospace;
-        }
-        
-        canvas { display: block; }
-        
-        #video-input { 
-            position: absolute; 
-            top: 0; 
-            left: 0; 
-            opacity: 0; 
-            pointer-events: none; 
-        }
-        
-        .hand-indicator {
-            position: absolute;
-            width: 40px;
-            height: 40px;
-            border: 3px solid #00ffcc;
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.2s ease;
-            animation: pulse 1s ease-in-out infinite;
-        }
-        
-        .hand-indicator.visible { opacity: 0.8; }
-        
-        @keyframes pulse {
-            0%, 100% { transform: translate(-50%, -50%) scale(1); }
-            50% { transform: translate(-50%, -50%) scale(1.2); }
-        }
-        
-        #ui {
-            position: absolute;
-            top: 20px; 
-            left: 20px;
-            color: #00ffcc;
-            z-index: 10;
-            background: linear-gradient(135deg, rgba(0, 20, 30, 0.95) 0%, rgba(0, 10, 20, 0.9) 100%);
-            padding: 15px;
-            border-radius: 12px;
-            border: 2px solid rgba(0, 255, 204, 0.3);
-            box-shadow: 0 8px 32px rgba(0, 255, 204, 0.2);
-            backdrop-filter: blur(20px);
-            max-width: 320px;
-            max-height: 85vh;
-            overflow-y: auto;
-            transition: all 0.3s ease;
-        }
-        
-        #ui.minimized { max-height: 60px; overflow: hidden; }
-        #ui::-webkit-scrollbar { width: 6px; }
-        #ui::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.3); border-radius: 10px; }
-        #ui::-webkit-scrollbar-thumb { background: linear-gradient(180deg, #00ffcc, #00ccaa); border-radius: 10px; }
-        
-        h1 { 
-            margin: 0 0 10px 0; 
-            font-size: 1.2rem; 
-            text-transform: uppercase; 
-            letter-spacing: 3px; 
-            font-weight: 900;
-            background: linear-gradient(135deg, #00ffcc, #00ff88);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            cursor: pointer;
-            user-select: none;
-        }
-        
-        .stats {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-            margin: 10px 0;
-            font-size: 0.75rem;
-        }
-        
-        .stat-item {
-            background: rgba(0, 255, 204, 0.1);
-            padding: 5px 8px;
-            border-radius: 6px;
-            border-left: 2px solid #00ffcc;
-        }
-        
-        .stat-label { color: #00ffcc; opacity: 0.7; font-size: 0.7rem; }
-        .stat-value { color: #fff; font-weight: 700; font-size: 0.85rem; }
-        
-        .detection-status {
-            background: rgba(255, 0, 0, 0.3);
-            padding: 8px;
-            border-radius: 6px;
-            text-align: center;
-            font-size: 0.75rem;
-            margin: 8px 0;
-            border: 1px solid rgba(255, 0, 0, 0.5);
-        }
-        
-        .detection-status.good {
-            background: rgba(0, 255, 0, 0.3);
-            border-color: rgba(0, 255, 0, 0.5);
-        }
-        
-        .section {
-            margin: 12px 0;
-            border-radius: 8px;
-            overflow: hidden;
-            background: rgba(0, 0, 0, 0.2);
-        }
-        
-        .section-header {
-            padding: 8px 12px;
-            background: rgba(0, 255, 204, 0.15);
-            cursor: pointer;
-            user-select: none;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            transition: all 0.2s ease;
-            font-size: 0.85rem;
-            font-weight: 700;
-            color: #00ffcc;
-        }
-        
-        .section-header:hover { background: rgba(0, 255, 204, 0.25); }
-        .section-header .icon { transition: transform 0.3s ease; }
-        .section.collapsed .icon { transform: rotate(-90deg); }
-        
-        .section-content {
-            padding: 10px;
-            font-size: 0.75rem;
-            max-height: 500px;
-            overflow: hidden;
-            transition: max-height 0.3s ease, padding 0.3s ease;
-        }
-        
-        .section.collapsed .section-content {
-            max-height: 0;
-            padding: 0 10px;
-        }
-        
-        .gesture-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 4px 6px;
-            margin: 3px 0;
-            background: rgba(255, 255, 255, 0.03);
-            border-radius: 4px;
-            font-size: 0.7rem;
-        }
-        
-        .gesture-name { color: #00ffcc; }
-        .gesture-desc { color: #aaa; text-align: right; }
-        
-        .key-indicator {
-            display: inline-block;
-            background: rgba(255, 0, 204, 0.2);
-            padding: 2px 6px;
-            border-radius: 3px;
-            font-size: 0.7rem;
-            font-weight: 700;
-            color: #ff00cc;
-            margin-left: 5px;
-        }
-        
-        #feature-panel {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: linear-gradient(135deg, rgba(30, 0, 30, 0.95) 0%, rgba(20, 0, 20, 0.9) 100%);
-            padding: 15px;
-            border-radius: 12px;
-            border: 2px solid rgba(255, 0, 204, 0.3);
-            color: white;
-            max-width: 280px;
-            backdrop-filter: blur(20px);
-            box-shadow: 0 8px 32px rgba(255, 0, 204, 0.2);
-            z-index: 10;
-        }
-        
-        #feature-panel.minimized { max-height: 60px; overflow: hidden; }
-        
-        #feature-panel h3 {
-            margin: 0 0 12px 0;
-            color: #ff00cc;
-            font-size: 1rem;
-            font-weight: 900;
-            cursor: pointer;
-            user-select: none;
-        }
-        
-        .feature-grid { display: grid; gap: 6px; }
-        
-        .feature-item {
-            font-size: 0.75rem;
-            padding: 6px 10px;
-            border-radius: 6px;
-            border-left: 3px solid transparent;
-            transition: all 0.2s ease;
-            background: rgba(255, 255, 255, 0.02);
-            display: flex;
-            justify-content: space-between;
-        }
-        
-        .feature-active {
-            color: #00ff88;
-            font-weight: 700;
-            background: rgba(0, 255, 136, 0.15);
-            border-left-color: #00ff88;
-        }
-        
-        .feature-inactive { color: #666; }
-        
-        #mode-indicator {
-            position: absolute;
-            bottom: 40px; 
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 2rem;
-            font-weight: 900;
-            background: linear-gradient(135deg, #00ffcc, #00ff88);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            pointer-events: none;
-            filter: drop-shadow(0 0 20px rgba(0, 255, 204, 0.6));
-        }
-        
-        #gesture-feedback {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%) scale(0.8);
-            font-size: 4rem;
-            opacity: 0;
-            pointer-events: none;
-            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-        
-        #gesture-feedback.show {
-            opacity: 1;
-            transform: translate(-50%, -50%) scale(1);
-        }
-        
-        .control-buttons {
-            position: absolute;
-            bottom: 25px;
-            left: 25px;
-            display: flex;
-            gap: 10px;
-            z-index: 20;
-        }
-        
-        .control-btn {
-            background: linear-gradient(135deg, #ff00cc, #cc0099);
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 10px;
-            cursor: pointer;
-            font-family: 'Orbitron', monospace;
-            font-weight: 700;
-            font-size: 0.8rem;
-            box-shadow: 0 4px 15px rgba(255, 0, 204, 0.4);
-            transition: all 0.3s ease;
-        }
-        
-        .control-btn:hover { transform: translateY(-2px); }
-        
-        #particle-trail {
-            position: absolute;
-            top: 0;
-            left: 0;
-            pointer-events: none;
-            z-index: 1;
-            mix-blend-mode: screen;
-        }
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;600&display=swap');
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{margin:0;overflow:hidden;background:#020208;font-family:'Inter','Orbitron',sans-serif;color:#fff}
+        canvas{display:block;position:absolute;top:0;left:0}
+        #video-input{position:absolute;top:0;left:0;opacity:0;pointer-events:none}
 
-        .divider {
-            height: 1px;
-            background: linear-gradient(90deg, transparent, rgba(0, 255, 204, 0.3), transparent);
-            margin: 10px 0;
-        }
+        .hand-cursor{position:absolute;width:50px;height:50px;border-radius:50%;transform:translate(-50%,-50%);pointer-events:none;opacity:0;transition:opacity .3s}
+        .hand-cursor.visible{opacity:1}
+        .hand-cursor .ring{position:absolute;inset:0;border-radius:50%;border:2px solid var(--clr,#00ffe5);animation:hcPulse 1.5s ease-in-out infinite}
+        .hand-cursor .dot{position:absolute;top:50%;left:50%;width:8px;height:8px;background:var(--clr,#00ffe5);border-radius:50%;transform:translate(-50%,-50%);box-shadow:0 0 12px var(--clr,#00ffe5)}
+        @keyframes hcPulse{0%,100%{transform:scale(1);opacity:.8}50%{transform:scale(1.4);opacity:.3}}
 
-        .tip {
-            font-size: 0.7rem;
-            color: #888;
-            font-style: italic;
-            padding: 8px;
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 6px;
-            margin-top: 8px;
-        }
+        #ui{position:absolute;top:16px;left:16px;width:300px;z-index:10;background:linear-gradient(135deg,rgba(6,10,28,.92),rgba(4,6,18,.88));padding:16px;border-radius:16px;border:1px solid rgba(0,255,229,.15);box-shadow:0 8px 40px rgba(0,255,229,.08),inset 0 1px 0 rgba(255,255,255,.04);backdrop-filter:blur(24px);max-height:88vh;overflow-y:auto;transition:all .4s cubic-bezier(.4,0,.2,1)}
+        #ui.minimized{max-height:52px;overflow:hidden}
+        #ui::-webkit-scrollbar{width:4px}
+        #ui::-webkit-scrollbar-thumb{background:linear-gradient(180deg,#00ffe5,#7b61ff);border-radius:4px}
+
+        .logo{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;margin-bottom:12px}
+        .logo-icon{font-size:1.4rem}
+        .logo h1{font-family:'Orbitron',monospace;font-size:.95rem;font-weight:900;letter-spacing:2px;background:linear-gradient(135deg,#00ffe5,#7b61ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+        .logo .ver{font-size:.55rem;color:rgba(255,255,255,.35);font-weight:400;letter-spacing:1px}
+
+        .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px}
+        .stat{background:rgba(255,255,255,.03);padding:6px;border-radius:8px;text-align:center;border:1px solid rgba(255,255,255,.04)}
+        .stat .label{font-size:.55rem;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px}
+        .stat .val{font-family:'Orbitron',monospace;font-size:.75rem;font-weight:700;color:#00ffe5}
+
+        .detect-bar{padding:8px 12px;border-radius:8px;text-align:center;font-size:.7rem;font-weight:600;margin-bottom:10px;transition:all .3s;border:1px solid}
+        .detect-bar.none{background:rgba(255,60,60,.08);border-color:rgba(255,60,60,.25);color:#ff6b6b}
+        .detect-bar.ok{background:rgba(0,255,180,.08);border-color:rgba(0,255,180,.2);color:#00ffb4}
+
+        .gesture-live{padding:8px 12px;border-radius:8px;background:rgba(123,97,255,.08);border:1px solid rgba(123,97,255,.2);text-align:center;font-size:.7rem;color:#b8a5ff;margin-bottom:10px;min-height:30px;display:flex;align-items:center;justify-content:center;gap:6px}
+        .gesture-live .g-emoji{font-size:1.2rem}
+
+        .section{margin-bottom:8px;border-radius:10px;overflow:hidden;background:rgba(255,255,255,.015);border:1px solid rgba(255,255,255,.03)}
+        .sec-hdr{padding:8px 12px;cursor:pointer;user-select:none;display:flex;justify-content:space-between;align-items:center;font-size:.75rem;font-weight:600;color:rgba(255,255,255,.7);transition:all .2s}
+        .sec-hdr:hover{background:rgba(255,255,255,.03);color:#fff}
+        .sec-hdr .arrow{transition:transform .3s;font-size:.6rem;color:rgba(255,255,255,.3)}
+        .section.closed .arrow{transform:rotate(-90deg)}
+        .sec-body{padding:8px 10px;max-height:400px;overflow:hidden;transition:max-height .4s cubic-bezier(.4,0,.2,1),padding .3s}
+        .section.closed .sec-body{max-height:0;padding:0 10px}
+
+        .g-row{display:flex;justify-content:space-between;padding:4px 6px;margin:2px 0;border-radius:4px;font-size:.65rem}
+        .g-row:hover{background:rgba(255,255,255,.03)}
+        .g-name{color:#00ffe5}
+        .g-desc{color:rgba(255,255,255,.35)}
+        .g-key{display:inline-block;background:rgba(123,97,255,.15);padding:1px 5px;border-radius:3px;font-size:.6rem;font-weight:700;color:#b8a5ff;margin-left:4px}
+
+        .tip{font-size:.6rem;color:rgba(255,255,255,.3);padding:8px;background:rgba(255,255,255,.015);border-radius:6px;margin-top:6px;line-height:1.4}
+
+        #fx-panel{position:absolute;top:16px;right:16px;width:240px;background:linear-gradient(135deg,rgba(18,6,30,.92),rgba(10,4,20,.88));padding:14px;border-radius:16px;border:1px solid rgba(123,97,255,.15);backdrop-filter:blur(24px);box-shadow:0 8px 40px rgba(123,97,255,.08);z-index:10;transition:all .4s}
+        #fx-panel.minimized{max-height:48px;overflow:hidden}
+        #fx-panel .panel-title{font-family:'Orbitron',monospace;font-size:.8rem;font-weight:900;color:#b8a5ff;cursor:pointer;user-select:none;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+        .fx-grid{display:grid;gap:4px}
+        .fx-item{font-size:.68rem;padding:6px 10px;border-radius:6px;display:flex;justify-content:space-between;align-items:center;border-left:3px solid transparent;transition:all .25s;background:rgba(255,255,255,.015)}
+        .fx-item.on{color:#00ffb4;font-weight:600;background:rgba(0,255,180,.06);border-left-color:#00ffb4}
+        .fx-item.off{color:rgba(255,255,255,.25)}
+        .fx-item .dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+
+        #mode-label{position:absolute;bottom:50px;left:50%;transform:translateX(-50%);font-family:'Orbitron',monospace;font-size:1.6rem;font-weight:900;background:linear-gradient(135deg,#00ffe5,#7b61ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;pointer-events:none;filter:drop-shadow(0 0 30px rgba(0,255,229,.3));letter-spacing:4px;transition:all .4s}
+
+        #gesture-fb{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(.6);font-size:5rem;opacity:0;pointer-events:none;transition:all .5s cubic-bezier(.34,1.56,.64,1);filter:drop-shadow(0 0 30px rgba(255,255,255,.3))}
+        #gesture-fb.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
+
+        .ctrl-bar{position:absolute;bottom:20px;left:20px;display:flex;gap:8px;z-index:20}
+        .ctrl-btn{background:linear-gradient(135deg,#7b61ff,#5a3fd6);color:#fff;border:none;padding:10px 18px;border-radius:10px;cursor:pointer;font-family:'Orbitron',monospace;font-weight:700;font-size:.7rem;box-shadow:0 4px 20px rgba(123,97,255,.3);transition:all .3s;letter-spacing:1px}
+        .ctrl-btn:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(123,97,255,.5)}
+
+        .mouse-hint{position:absolute;bottom:20px;right:20px;font-size:.6rem;color:rgba(255,255,255,.2);z-index:10;text-align:right;line-height:1.6;pointer-events:none}
     </style>
 </head>
 <body>
-
-    <div id="hand-indicator-1" class="hand-indicator"></div>
-    <div id="hand-indicator-2" class="hand-indicator" style="border-color: #ff00cc;"></div>
+    <div class="hand-cursor" id="hc1" style="--clr:#00ffe5"><div class="ring"></div><div class="dot"></div></div>
+    <div class="hand-cursor" id="hc2" style="--clr:#b8a5ff"><div class="ring"></div><div class="dot"></div></div>
 
     <div id="ui">
-        <h1 onclick="toggleUI()">⚡ NEBULATOUCH v4</h1>
-        
-        <div id="detection-info" class="detection-status">
-            <div id="detection-text">Initializing...</div>
+        <div class="logo" onclick="toggleUI()">
+            <span class="logo-icon">✦</span>
+            <div><h1>NEBULATOUCH</h1><div class="ver">v5 · CRYSTAL EXPANSE</div></div>
         </div>
-        
+
+        <div id="detect-bar" class="detect-bar none">Initializing…</div>
+
         <div class="stats">
-            <div class="stat-item">
-                <div class="stat-label">Mode</div>
-                <div class="stat-value" id="mode-text">SHAPE</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-label">Shape</div>
-                <div class="stat-value" id="shape-name">SPHERE</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-label">Hands</div>
-                <div class="stat-value" id="hand-count">0</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-label">Zoom</div>
-                <div class="stat-value" id="zoom-level">100%</div>
+            <div class="stat"><div class="label">Shape</div><div class="val" id="s-shape">SPHERE</div></div>
+            <div class="stat"><div class="label">Hands</div><div class="val" id="s-hands">0</div></div>
+            <div class="stat"><div class="label">Zoom</div><div class="val" id="s-zoom">100%</div></div>
+            <div class="stat"><div class="label">FPS</div><div class="val" id="s-fps">60</div></div>
+        </div>
+
+        <div class="gesture-live" id="gesture-live"><span style="opacity:.5">Awaiting gesture…</span></div>
+
+        <div class="section" id="sec-gestures">
+            <div class="sec-hdr" onclick="togSec('sec-gestures')"><span>🖐️ Gestures (20)</span><span class="arrow">▾</span></div>
+            <div class="sec-body">
+                <div class="g-row"><span class="g-name">👋 Swipe</span><span class="g-desc">Change Shape</span></div>
+                <div class="g-row"><span class="g-name">🤏 Pinch</span><span class="g-desc">Resize</span></div>
+                <div class="g-row"><span class="g-name">✋ Move</span><span class="g-desc">Rotate</span></div>
+                <div class="g-row"><span class="g-name">✌️ Peace</span><span class="g-desc">Auto-Rotate</span></div>
+                <div class="g-row"><span class="g-name">👍 Thumbs Up</span><span class="g-desc">Colors</span></div>
+                <div class="g-row"><span class="g-name">👎 Thumbs Down</span><span class="g-desc">Reset</span></div>
+                <div class="g-row"><span class="g-name">☝️ Point Up</span><span class="g-desc">Speed+</span></div>
+                <div class="g-row"><span class="g-name">👇 Point Down</span><span class="g-desc">Speed−</span></div>
+                <div class="g-row"><span class="g-name">🤘 Rock</span><span class="g-desc">Explode</span></div>
+                <div class="g-row"><span class="g-name">🖖 Vulcan</span><span class="g-desc">Freeze</span></div>
+                <div class="g-row"><span class="g-name">🤙 Hang Loose</span><span class="g-desc">Wave</span></div>
+                <div class="g-row"><span class="g-name">👌 OK</span><span class="g-desc">Vortex</span></div>
+                <div class="g-row"><span class="g-name">✊ Fist</span><span class="g-desc">Compress</span></div>
+                <div class="g-row"><span class="g-name">🖐️ Open</span><span class="g-desc">Expand</span></div>
+                <div class="g-row"><span class="g-name">🤲 Both Open</span><span class="g-desc">Gravity</span></div>
+                <div class="g-row"><span class="g-name">✌️✌️ Both Peace</span><span class="g-desc">Mirror</span></div>
+                <div class="g-row"><span class="g-name">👐 Push Apart</span><span class="g-desc">Expand</span></div>
+                <div class="g-row"><span class="g-name">🤜🤛 Pull</span><span class="g-desc">Contract</span></div>
+                <div class="g-row"><span class="g-name">👏 Clap</span><span class="g-desc">Shockwave</span></div>
+                <div class="g-row"><span class="g-name">🤏🤏 Zoom</span><span class="g-desc">Camera Zoom</span></div>
             </div>
         </div>
 
-        <div class="divider"></div>
-
-        <div class="section" id="one-section">
-            <div class="section-header" onclick="toggleSection('one-section')">
-                <span>🖐️ GESTURES (15)</span>
-                <span class="icon">▼</span>
-            </div>
-            <div class="section-content">
-                <div class="gesture-item"><span class="gesture-name">👋 Swipe</span><span class="gesture-desc">Change Shape</span></div>
-                <div class="gesture-item"><span class="gesture-name">🤏 Pinch</span><span class="gesture-desc">Resize</span></div>
-                <div class="gesture-item"><span class="gesture-name">✋ Move</span><span class="gesture-desc">Rotate</span></div>
-                <div class="gesture-item"><span class="gesture-name">✌️ Peace</span><span class="gesture-desc">Auto-Rotate</span></div>
-                <div class="gesture-item"><span class="gesture-name">👍 Thumbs Up</span><span class="gesture-desc">Colors</span></div>
-                <div class="gesture-item"><span class="gesture-name">👎 Thumbs Down</span><span class="gesture-desc">Reset</span></div>
-                <div class="gesture-item"><span class="gesture-name">☝️ Point Up</span><span class="gesture-desc">Speed+</span></div>
-                <div class="gesture-item"><span class="gesture-name">👇 Point Down</span><span class="gesture-desc">Speed-</span></div>
-                <div class="gesture-item"><span class="gesture-name">🤘 Rock</span><span class="gesture-desc">Explode</span></div>
-                <div class="gesture-item"><span class="gesture-name">🖖 Vulcan</span><span class="gesture-desc">Freeze</span></div>
-                <div class="gesture-item"><span class="gesture-name">🤙 Hang Loose</span><span class="gesture-desc">Wave</span></div>
-                <div class="gesture-item"><span class="gesture-name">👌 OK</span><span class="gesture-desc">Vortex</span></div>
-                <div class="gesture-item"><span class="gesture-name">✊ Fist</span><span class="gesture-desc">Compress</span></div>
-                <div class="gesture-item"><span class="gesture-name">🖐️ Open</span><span class="gesture-desc">Expand</span></div>
-                <div class="gesture-item"><span class="gesture-name">🤲 Both Open</span><span class="gesture-desc">Gravity</span></div>
-                <div class="gesture-item"><span class="gesture-name">✌️✌️ Both Peace</span><span class="gesture-desc">Mirror</span></div>
-                <div class="gesture-item"><span class="gesture-name">👐 Push Apart</span><span class="gesture-desc">Expand</span></div>
-                <div class="gesture-item"><span class="gesture-name">🤜🤛 Pull</span><span class="gesture-desc">Contract</span></div>
-                <div class="gesture-item"><span class="gesture-name">👏 Clap</span><span class="gesture-desc">Shockwave</span></div>
-                <div class="gesture-item"><span class="gesture-name">🤏🤏 Zoom</span><span class="gesture-desc">Camera Zoom</span></div>
+        <div class="section" id="sec-keys">
+            <div class="sec-hdr" onclick="togSec('sec-keys')"><span>⌨️ Keys</span><span class="arrow">▾</span></div>
+            <div class="sec-body">
+                <div class="g-row"><span class="g-name">T</span><span class="g-desc">Trails</span></div>
+                <div class="g-row"><span class="g-name">S</span><span class="g-desc">Sound</span></div>
+                <div class="g-row"><span class="g-name">R</span><span class="g-desc">Rainbow</span></div>
+                <div class="g-row"><span class="g-name">P</span><span class="g-desc">Pulsate</span></div>
+                <div class="g-row"><span class="g-name">C</span><span class="g-desc">Screenshot</span></div>
+                <div class="g-row"><span class="g-name">W</span><span class="g-desc">Warp Speed</span></div>
+                <div class="g-row"><span class="g-name">N</span><span class="g-desc">Next Shape</span></div>
+                <div class="g-row"><span class="g-name">B</span><span class="g-desc">Prev Shape</span></div>
+                <div class="g-row"><span class="g-name">Space</span><span class="g-desc">Explode</span></div>
             </div>
         </div>
-
-        <div class="section" id="key-section">
-            <div class="section-header" onclick="toggleSection('key-section')">
-                <span>⌨️ KEYS</span>
-                <span class="icon">▼</span>
-            </div>
-            <div class="section-content">
-                <div class="gesture-item"><span class="gesture-name">T</span><span class="gesture-desc">Trails</span></div>
-                <div class="gesture-item"><span class="gesture-name">S</span><span class="gesture-desc">Sound</span></div>
-                <div class="gesture-item"><span class="gesture-name">R</span><span class="gesture-desc">Rainbow</span></div>
-                <div class="gesture-item"><span class="gesture-name">P</span><span class="gesture-desc">Pulsate</span></div>
-                <div class="gesture-item"><span class="gesture-name">C</span><span class="gesture-desc">Screenshot</span></div>
-                <div class="gesture-item"><span class="gesture-name">W</span><span class="gesture-desc">Warp Speed</span></div>
-            </div>
-        </div>
-
-        <div class="tip">💡 Keep hands visible. Better lighting = better tracking!</div>
+        <div class="tip">💡 Use mouse to rotate (drag) and zoom (scroll). Hand tracking needs webcam + good lighting.</div>
     </div>
 
-    <div id="feature-panel">
-        <h3 onclick="togglePanel()">🎛️ EFFECTS</h3>
-        <div class="feature-grid">
-            <div class="feature-item"><span id="f-auto-rotate">Auto-Rotate</span></div>
-            <div class="feature-item"><span id="f-gravity">Gravity</span></div>
-            <div class="feature-item"><span id="f-mirror">Mirror</span></div>
-            <div class="feature-item"><span id="f-freeze">Freeze</span></div>
-            <div class="feature-item"><span id="f-trails">Trails</span></div>
-            <div class="feature-item"><span id="f-sound">Sound</span></div>
-            <div class="feature-item"><span id="f-rainbow">Rainbow</span></div>
-            <div class="feature-item"><span id="f-pulsate">Pulsate</span></div>
-            <div class="feature-item"><span id="f-warp">Warp</span></div>
-        </div>
+    <div id="fx-panel">
+        <div class="panel-title" onclick="togFx()">✦ EFFECTS</div>
+        <div class="fx-grid" id="fx-grid"></div>
     </div>
 
-    <div class="control-buttons">
-        <button class="control-btn" onclick="resetAll()">Reset</button>
-        <button class="control-btn" onclick="takeScreenshot()">📸</button>
+    <div class="ctrl-bar">
+        <button class="ctrl-btn" onclick="resetAll()">RESET</button>
+        <button class="ctrl-btn" onclick="takeScreenshot()">📸 CAPTURE</button>
     </div>
-    
-    <div id="mode-indicator">Initializing...</div>
-    <div id="gesture-feedback"></div>
-    <canvas id="particle-trail"></canvas>
+
+    <div id="mode-label">SPHERE</div>
+    <div id="gesture-fb"></div>
+    <div class="mouse-hint">🖱 Drag to rotate · Scroll to zoom</div>
     <video id="video-input" playsinline></video>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
-
-    <script>
-        // Audio
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        function playSound(freq, dur, type = 'sine') {
-            if (!state.soundEnabled) return;
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.frequency.value = freq;
-            osc.type = type;
-            gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + dur);
-            osc.start(audioCtx.currentTime);
-            osc.stop(audioCtx.currentTime + dur);
-        }
-
-        // Config
-        const CONFIG = {
-            particleCount: 10000,
-            camZ: 50,
-            minZoom: 10,
-            maxZoom: 200,
-            swipeThreshold: 0.6,
-            pinchThreshold: 0.07,
-            clapThreshold: 0.2,
-            pushPullThreshold: 0.04
-        };
-
-        // State
-        const state = {
-            mode: 'SHAPE',
-            hand: {x:0, y:0}, hand2: {x:0, y:0},
-            lastHandX: 0, lastHandY: 0, lastHandDist: 0,
-            velocity: 0, pinchDist: 0.1, isPinching: false,
-            swipeCooldown: 0, currentShapeIdx: 0,
-            autoRotate: false, gravityField: false, mirrorMode: false,
-            freeze: false, particleTrails: false, soundEnabled: true,
-            rainbowMode: false, pulsate: false, warpSpeed: false,
-            gestureCooldown: 0, explosionActive: false, waveEffect: false,
-            vortexEffect: false, blackHoleEffect: false,
-            handCount: 0, particleSpeed: 0.12, fps: 60,
-            smoothRotation: {x:0, y:0}, targetRotation: {x:0, y:0},
-            expansionFactor: 1, lastFrameTime: Date.now()
-        };
-
-        // UI
-        function toggleUI() {
-            document.getElementById('ui').classList.toggle('minimized');
-        }
-        function togglePanel() {
-            document.getElementById('feature-panel').classList.toggle('minimized');
-        }
-        function toggleSection(id) {
-            document.getElementById(id).classList.toggle('collapsed');
-        }
-        
-        function updateDetectionStatus(handCount) {
-            const statusDiv = document.getElementById('detection-info');
-            const textDiv = document.getElementById('detection-text');
-            if (handCount === 0) {
-                statusDiv.className = 'detection-status';
-                textDiv.textContent = '❌ No hands detected';
-            } else if (handCount === 1) {
-                statusDiv.className = 'detection-status good';
-                textDiv.textContent = '✅ 1 hand detected';
-            } else {
-                statusDiv.className = 'detection-status good';
-                textDiv.textContent = '✅✅ 2 hands detected';
-            }
-        }
-
-        function resetAll() {
-            resetView();
-            state.autoRotate = state.gravityField = state.mirrorMode = false;
-            state.freeze = state.rainbowMode = state.pulsate = state.warpSpeed = false;
-            state.waveEffect = state.vortexEffect = state.blackHoleEffect = false;
-            state.expansionFactor = 1;
-            updateAllFeatureDisplays();
-            showGestureFeedback('🔄');
-        }
-
-        function takeScreenshot() {
-            const link = document.createElement('a');
-            link.download = 'NebulaTouch_' + Date.now() + '.png';
-            link.href = renderer.domElement.toDataURL();
-            link.click();
-            showGestureFeedback('📸');
-            playSound(800, 0.1, 'sine');
-        }
-
-        // 2D Canvas
-        const trailCanvas = document.getElementById('particle-trail');
-        trailCanvas.width = window.innerWidth;
-        trailCanvas.height = window.innerHeight;
-        const trailCtx = trailCanvas.getContext('2d');
-
-        // THREE.JS
-        const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x050505, 0.012);
-
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.z = CONFIG.camZ;
-
-        const renderer = new THREE.WebGLRenderer({ 
-            antialias: true, alpha: true,
-            powerPreference: "high-performance",
-            precision: "highp",
-            preserveDrawingBuffer: true
-        });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        document.body.appendChild(renderer.domElement);
-
-        const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
-        scene.add(ambientLight);
-        const pointLight = new THREE.PointLight(0x00ffcc, 1, 100);
-        pointLight.position.set(20, 20, 20);
-        scene.add(pointLight);
-        const pointLight2 = new THREE.PointLight(0xff00cc, 1, 100);
-        pointLight2.position.set(-20, -20, 20);
-        scene.add(pointLight2);
-
-        // Particles
-        const geometry = new THREE.BufferGeometry();
-        const positions = new Float32Array(CONFIG.particleCount * 3);
-        const targetPositions = new Float32Array(CONFIG.particleCount * 3);
-        const velocities = new Float32Array(CONFIG.particleCount * 3);
-        const colors = new Float32Array(CONFIG.particleCount * 3);
-
-        for (let i = 0; i < CONFIG.particleCount; i++) {
-            const idx = i * 3;
-            positions[idx] = positions[idx+1] = positions[idx+2] = (Math.random() - 0.5) * 100;
-            targetPositions[idx] = positions[idx];
-            targetPositions[idx+1] = positions[idx+1];
-            targetPositions[idx+2] = positions[idx+2];
-            velocities[idx] = velocities[idx+1] = velocities[idx+2] = 0;
-            colors[idx] = colors[idx+1] = colors[idx+2] = 1;
-        }
-
-        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-        geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-
-        const material = new THREE.PointsMaterial({
-            size: 0.4, vertexColors: true, blending: THREE.AdditiveBlending,
-            transparent: true, opacity: 0.95, depthWrite: false
-        });
-
-        const particleSystem = new THREE.Points(geometry, material);
-        scene.add(particleSystem);
-
-        // Shapes
-        const shapeFormulas = {
-            'sphere': (i) => {
-                const r = 12, theta = Math.random() * Math.PI * 2;
-                const phi = Math.acos(2 * Math.random() - 1);
-                return [r * Math.sin(phi) * Math.cos(theta), r * Math.sin(phi) * Math.sin(theta), r * Math.cos(phi), 0.1, 0.8, 1.0];
-            },
-            'heart': (i) => {
-                const t = Math.random() * Math.PI * 2, scale = 0.8;
-                const x = 16 * Math.pow(Math.sin(t), 3);
-                const y = 13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t);
-                return [x * scale, y * scale, (Math.random() - 0.5) * 6, 1.0, 0.2, 0.4];
-            },
-            'cube': (i) => {
-                const face = Math.floor(Math.random() * 6);
-                const u = (Math.random() - 0.5) * 20, v = (Math.random() - 0.5) * 20;
-                let x, y, z;
-                if (face === 0) { x = 10; y = u; z = v; }
-                else if (face === 1) { x = -10; y = u; z = v; }
-                else if (face === 2) { x = u; y = 10; z = v; }
-                else if (face === 3) { x = u; y = -10; z = v; }
-                else if (face === 4) { x = u; y = v; z = 10; }
-                else { x = u; y = v; z = -10; }
-                return [x, y, z, 0.3, 1.0, 0.8];
-            },
-            'galaxy': (i) => {
-                const arm = Math.floor(Math.random() * 3), t = Math.random() * Math.PI * 4;
-                const r = t * 2.5, armAngle = (arm / 3) * Math.PI * 2;
-                return [r * Math.cos(t + armAngle), (Math.random() - 0.5) * 3, r * Math.sin(t + armAngle), 0.9, 0.8, 1.0];
-            },
-            'dna': (i) => {
-                const t = (i / CONFIG.particleCount) * Math.PI * 8, r = 6, strand = i % 2;
-                return [r * Math.cos(t + strand * Math.PI), (i / CONFIG.particleCount - 0.5) * 35, r * Math.sin(t + strand * Math.PI), strand ? 1.0 : 0.2, 0.3, strand ? 0.2 : 1.0];
-            }
-        };
-
-        const shapeKeys = Object.keys(shapeFormulas);
-
-        function morphToShape(name) {
-            const func = shapeFormulas[name];
-            for (let i = 0; i < CONFIG.particleCount; i++) {
-                const [x, y, z, r, g, b] = func(i);
-                const idx = i * 3;
-                targetPositions[idx] = x;
-                targetPositions[idx+1] = y;
-                targetPositions[idx+2] = z;
-                if (!state.rainbowMode) {
-                    colors[idx] = r; colors[idx+1] = g; colors[idx+2] = b;
-                }
-            }
-            geometry.attributes.color.needsUpdate = true;
-            document.getElementById('shape-name').innerText = name.toUpperCase();
-            document.getElementById('mode-indicator').innerText = name.toUpperCase();
-            playSound(440 + state.currentShapeIdx * 50, 0.1, 'sine');
-        }
-
-        function randomizeColors() {
-            const hue = Math.random();
-            for (let i = 0; i < CONFIG.particleCount; i++) {
-                const color = new THREE.Color().setHSL((hue + i / CONFIG.particleCount * 0.3) % 1, 1, 0.5);
-                const idx = i * 3;
-                colors[idx] = color.r; colors[idx+1] = color.g; colors[idx+2] = color.b;
-            }
-            geometry.attributes.color.needsUpdate = true;
-            showGestureFeedback('🎨');
-            playSound(800, 0.15, 'square');
-        }
-
-        function resetView() {
-            particleSystem.rotation.set(0, 0, 0);
-            particleSystem.scale.set(1, 1, 1);
-            camera.position.z = CONFIG.camZ;
-            state.particleSpeed = 0.12;
-            state.expansionFactor = 1;
-            showGestureFeedback('🔄');
-            playSound(300, 0.2, 'triangle');
-        }
-
-        function explodeParticles() {
-            state.explosionActive = true;
-            for (let i = 0; i < CONFIG.particleCount; i++) {
-                const idx = i * 3;
-                velocities[idx] = (Math.random() - 0.5) * 5;
-                velocities[idx+1] = (Math.random() - 0.5) * 5;
-                velocities[idx+2] = (Math.random() - 0.5) * 5;
-            }
-            showGestureFeedback('💥');
-            playSound(100, 0.5, 'sawtooth');
-            setTimeout(() => { state.explosionActive = false; }, 2000);
-        }
-
-        function showGestureFeedback(emoji) {
-            const feedback = document.getElementById('gesture-feedback');
-            feedback.textContent = emoji;
-            feedback.classList.add('show');
-            setTimeout(() => feedback.classList.remove('show'), 600);
-        }
-
-        function updateFeatureDisplay(feature, active) {
-            const element = document.getElementById('f-' + feature);
-            if (element) {
-                element.parentElement.className = active ? 'feature-item feature-active' : 'feature-item feature-inactive';
-            }
-        }
-
-        function updateAllFeatureDisplays() {
-            updateFeatureDisplay('auto-rotate', state.autoRotate);
-            updateFeatureDisplay('gravity', state.gravityField);
-            updateFeatureDisplay('mirror', state.mirrorMode);
-            updateFeatureDisplay('freeze', state.freeze);
-            updateFeatureDisplay('trails', state.particleTrails);
-            updateFeatureDisplay('sound', state.soundEnabled);
-            updateFeatureDisplay('rainbow', state.rainbowMode);
-            updateFeatureDisplay('pulsate', state.pulsate);
-            updateFeatureDisplay('warp', state.warpSpeed);
-        }
-
-        morphToShape('sphere');
-
-        // Gesture Detection
-        function detectGesture(landmarks) {
-            const thumb_tip = landmarks[4], index_tip = landmarks[8];
-            const middle_tip = landmarks[12], ring_tip = landmarks[16], pinky_tip = landmarks[20];
-            const index_mcp = landmarks[5], middle_mcp = landmarks[9];
-            const ring_mcp = landmarks[13], pinky_mcp = landmarks[17], wrist = landmarks[0];
-
-            const isExtended = (tip, mcp) => tip.y < mcp.y - 0.02;
-            const indexExt = isExtended(index_tip, index_mcp);
-            const middleExt = isExtended(middle_tip, middle_mcp);
-            const ringExt = isExtended(ring_tip, ring_mcp);
-            const pinkyExt = isExtended(pinky_tip, pinky_mcp);
-
-            if (!indexExt && !middleExt && !ringExt && !pinkyExt) return 'fist';
-            if (indexExt && middleExt && ringExt && pinkyExt) {
-                const middleRingDist = Math.abs(middle_tip.x - ring_tip.x);
-                const indexMiddleDist = Math.abs(index_tip.x - middle_tip.x);
-                if (middleRingDist > indexMiddleDist * 1.8) return 'vulcan';
-                return 'open_palm';
-            }
-            if (indexExt && middleExt && !ringExt && !pinkyExt) return 'peace';
-            if (!indexExt && !middleExt && !ringExt && !pinkyExt && thumb_tip.y < wrist.y - 0.1) return 'thumbs_up';
-            if (!indexExt && !middleExt && !ringExt && !pinkyExt && thumb_tip.y > wrist.y + 0.1) return 'thumbs_down';
-            if (indexExt && !middleExt && !ringExt && !pinkyExt && index_tip.y < wrist.y - 0.15) return 'point_up';
-            if (indexExt && !middleExt && !ringExt && !pinkyExt && index_tip.y > wrist.y + 0.05) return 'point_down';
-            if (indexExt && !middleExt && !ringExt && pinkyExt) return 'rock';
-            if (!indexExt && !middleExt && !ringExt && pinkyExt) return 'hang_loose';
-
-            const thumbIndexDist = Math.sqrt(Math.pow(thumb_tip.x - index_tip.x, 2) + Math.pow(thumb_tip.y - index_tip.y, 2));
-            if (thumbIndexDist < 0.04 && middleExt && ringExt && pinkyExt) return 'ok_sign';
-
-            return null;
-        }
-
-        function detectTwoHandGesture(hands1, hands2) {
-            const index1 = hands1[8], index2 = hands2[8];
-            const thumb1 = hands1[4], thumb2 = hands2[4];
-            
-            const handDist = Math.sqrt(Math.pow(index1.x - index2.x, 2) + Math.pow(index1.y - index2.y, 2));
-            const handDistChange = handDist - state.lastHandDist;
-            state.lastHandDist = handDist;
-
-            const gesture1 = detectGesture(hands1);
-            const gesture2 = detectGesture(hands2);
-
-            if (handDist < CONFIG.clapThreshold) return 'clap';
-            if (gesture1 === 'peace' && gesture2 === 'peace') return 'both_peace';
-            if (gesture1 === 'open_palm' && gesture2 === 'open_palm') return 'both_open';
-
-            const pinch1 = Math.sqrt(Math.pow(index1.x - thumb1.x, 2) + Math.pow(index1.y - thumb1.y, 2));
-            const pinch2 = Math.sqrt(Math.pow(index2.x - thumb2.x, 2) + Math.pow(index2.y - thumb2.y, 2));
-            
-            if (pinch1 < CONFIG.pinchThreshold && pinch2 < CONFIG.pinchThreshold) return 'both_pinch';
-            if (Math.abs(handDistChange) > CONFIG.pushPullThreshold) {
-                return handDistChange > 0 ? 'push_apart' : 'pull_together';
-            }
-
-            return null;
-        }
-
-        // MediaPipe Handler
-        function onResults(results) {
-            const shapeName = shapeKeys[state.currentShapeIdx].toUpperCase();
-            document.getElementById('mode-indicator').innerText = shapeName;
-            
-            const handCount = results.multiHandLandmarks ? results.multiHandLandmarks.length : 0;
-            state.handCount = handCount;
-            document.getElementById('hand-count').innerText = handCount;
-            updateDetectionStatus(handCount);
-
-            const indicator1 = document.getElementById('hand-indicator-1');
-            const indicator2 = document.getElementById('hand-indicator-2');
-            
-            if (handCount >= 1) {
-                const landmarks = results.multiHandLandmarks[0];
-                const index = landmarks[8];
-                indicator1.style.left = (index.x * window.innerWidth) + 'px';
-                indicator1.style.top = (index.y * window.innerHeight) + 'px';
-                indicator1.classList.add('visible');
-            } else {
-                indicator1.classList.remove('visible');
-            }
-            
-            if (handCount >= 2) {
-                const landmarks = results.multiHandLandmarks[1];
-                const index = landmarks[8];
-                indicator2.style.left = (index.x * window.innerWidth) + 'px';
-                indicator2.style.top = (index.y * window.innerHeight) + 'px';
-                indicator2.classList.add('visible');
-            } else {
-                indicator2.classList.remove('visible');
-            }
-
-            const zoomPercent = Math.round((CONFIG.camZ / camera.position.z) * 100);
-            document.getElementById('zoom-level').innerText = zoomPercent + '%';
-
-            if (handCount > 0) {
-                const landmarks = results.multiHandLandmarks[0];
-                const idxFinger = landmarks[8], thumb = landmarks[4];
-                
-                const x = (idxFinger.x - 0.5) * -40;
-                const y = (idxFinger.y - 0.5) * -30;
-                
-                state.velocity = x - state.lastHandX;
-                state.lastHandX = x;
-                state.lastHandY = y;
-                state.hand.x = x;
-                state.hand.y = y;
-
-                const dist = Math.sqrt(Math.pow(idxFinger.x - thumb.x, 2) + Math.pow(idxFinger.y - thumb.y, 2));
-                state.pinchDist = dist;
-                state.isPinching = dist < CONFIG.pinchThreshold;
-
-                if (handCount === 2) {
-                    const landmarks2 = results.multiHandLandmarks[1];
-                    const idxFinger2 = landmarks2[8];
-                    state.hand2.x = (idxFinger2.x - 0.5) * -40;
-                    state.hand2.y = (idxFinger2.y - 0.5) * -30;
-
-                    const twoHandGesture = detectTwoHandGesture(landmarks, landmarks2);
-                    
-                    if (state.gestureCooldown <= 0 && twoHandGesture) {
-                        if (twoHandGesture === 'both_open') {
-                            state.gravityField = !state.gravityField;
-                            updateFeatureDisplay('gravity', state.gravityField);
-                            showGestureFeedback(state.gravityField ? '🌌' : '⭕');
-                            playSound(600, 0.2, 'sine');
-                            state.gestureCooldown = 30;
-                        } else if (twoHandGesture === 'both_peace') {
-                            state.mirrorMode = !state.mirrorMode;
-                            updateFeatureDisplay('mirror', state.mirrorMode);
-                            showGestureFeedback(state.mirrorMode ? '🪞' : '⭕');
-                            playSound(700, 0.2, 'triangle');
-                            state.gestureCooldown = 30;
-                        } else if (twoHandGesture === 'clap') {
-                            showGestureFeedback('💫');
-                            playSound(150, 0.3, 'sine');
-                            state.gestureCooldown = 30;
-                        } else if (twoHandGesture === 'both_pinch') {
-                            const zoomDist = Math.sqrt(Math.pow(idxFinger.x - idxFinger2.x, 2) + Math.pow(idxFinger.y - idxFinger2.y, 2));
-                            const targetZ = CONFIG.minZoom + (1 - Math.min(zoomDist, 1)) * (CONFIG.maxZoom - CONFIG.minZoom);
-                            camera.position.z += (targetZ - camera.position.z) * 0.1;
-                        } else if (twoHandGesture === 'push_apart') {
-                            state.expansionFactor = Math.min(state.expansionFactor + 0.05, 3);
-                            showGestureFeedback('👐');
-                        } else if (twoHandGesture === 'pull_together') {
-                            state.expansionFactor = Math.max(state.expansionFactor - 0.05, 0.3);
-                            showGestureFeedback('🤜🤛');
-                        }
-                    }
-                }
-
-                const gesture = detectGesture(landmarks);
-                
-                if (state.gestureCooldown <= 0 && gesture) {
-                    if (gesture === 'peace') {
-                        state.autoRotate = !state.autoRotate;
-                        updateFeatureDisplay('auto-rotate', state.autoRotate);
-                        showGestureFeedback(state.autoRotate ? '🔄' : '⏸️');
-                        playSound(500, 0.15, 'sine');
-                        state.gestureCooldown = 30;
-                    } else if (gesture === 'thumbs_up') {
-                        randomizeColors();
-                        state.gestureCooldown = 30;
-                    } else if (gesture === 'thumbs_down') {
-                        resetView();
-                        state.gestureCooldown = 30;
-                    } else if (gesture === 'point_up') {
-                        state.particleSpeed = Math.min(state.particleSpeed + 0.02, 0.3);
-                        showGestureFeedback('⚡');
-                        playSound(900, 0.1, 'square');
-                        state.gestureCooldown = 20;
-                    } else if (gesture === 'point_down') {
-                        state.particleSpeed = Math.max(state.particleSpeed - 0.02, 0.02);
-                        showGestureFeedback('🐌');
-                        playSound(300, 0.1, 'square');
-                        state.gestureCooldown = 20;
-                    } else if (gesture === 'rock') {
-                        explodeParticles();
-                        state.gestureCooldown = 60;
-                    } else if (gesture === 'vulcan') {
-                        state.freeze = !state.freeze;
-                        updateFeatureDisplay('freeze', state.freeze);
-                        showGestureFeedback(state.freeze ? '❄️' : '🔥');
-                        playSound(400, 0.2, 'triangle');
-                        state.gestureCooldown = 30;
-                    } else if (gesture === 'hang_loose') {
-                        state.waveEffect = !state.waveEffect;
-                        showGestureFeedback(state.waveEffect ? '🌊' : '⭕');
-                        playSound(600, 0.2, 'sine');
-                        state.gestureCooldown = 30;
-                    } else if (gesture === 'ok_sign') {
-                        state.vortexEffect = !state.vortexEffect;
-                        showGestureFeedback(state.vortexEffect ? '🌀' : '⭕');
-                        playSound(700, 0.2, 'triangle');
-                        state.gestureCooldown = 30;
-                    } else if (gesture === 'fist') {
-                        state.expansionFactor = Math.max(state.expansionFactor - 0.1, 0.3);
-                        showGestureFeedback('✊');
-                        state.gestureCooldown = 15;
-                    } else if (gesture === 'open_palm') {
-                        state.expansionFactor = Math.min(state.expansionFactor + 0.1, 3);
-                        showGestureFeedback('🖐️');
-                        state.gestureCooldown = 15;
-                    }
-                } else if (state.gestureCooldown > 0) {
-                    state.gestureCooldown--;
-                }
-
-                if (state.swipeCooldown <= 0) {
-                    if (state.velocity > CONFIG.swipeThreshold) {
-                        state.currentShapeIdx = (state.currentShapeIdx + 1) % shapeKeys.length;
-                        morphToShape(shapeKeys[state.currentShapeIdx]);
-                        state.swipeCooldown = 20;
-                        showGestureFeedback('➡️');
-                    } else if (state.velocity < -CONFIG.swipeThreshold) {
-                        state.currentShapeIdx = (state.currentShapeIdx - 1 + shapeKeys.length) % shapeKeys.length;
-                        morphToShape(shapeKeys[state.currentShapeIdx]);
-                        state.swipeCooldown = 20;
-                        showGestureFeedback('⬅️');
-                    }
-                } else {
-                    state.swipeCooldown--;
-                }
-            }
-        }
-
-        // Animation
-        let frameCount = 0;
-        function animate() {
-            requestAnimationFrame(animate);
-
-            if (!state.freeze) {
-                const positionsArr = geometry.attributes.position.array;
-                const speed = state.warpSpeed ? state.particleSpeed * 3 : state.particleSpeed;
-                
-                for (let i = 0; i < CONFIG.particleCount; i++) {
-                    const idx = i * 3;
-
-                    if (state.explosionActive) {
-                        positionsArr[idx] += velocities[idx];
-                        positionsArr[idx+1] += velocities[idx+1];
-                        positionsArr[idx+2] += velocities[idx+2];
-                        velocities[idx] *= 0.95;
-                        velocities[idx+1] *= 0.95;
-                        velocities[idx+2] *= 0.95;
-                    } else if (state.gravityField && state.handCount > 0) {
-                        const dx = state.hand.x - positionsArr[idx];
-                        const dy = state.hand.y - positionsArr[idx+1];
-                        const dist = Math.sqrt(dx*dx + dy*dy) + 0.1;
-                        const force = 0.5 / (dist * dist);
-                        velocities[idx] += dx * force;
-                        velocities[idx+1] += dy * force;
-                        positionsArr[idx] += velocities[idx];
-                        positionsArr[idx+1] += velocities[idx+1];
-                        velocities[idx] *= 0.95;
-                        velocities[idx+1] *= 0.95;
-                    } else if (state.vortexEffect) {
-                        const angle = Math.atan2(positionsArr[idx+1], positionsArr[idx]);
-                        velocities[idx] = -Math.sin(angle) * 0.5;
-                        velocities[idx+1] = Math.cos(angle) * 0.5;
-                        positionsArr[idx] += velocities[idx];
-                        positionsArr[idx+1] += velocities[idx+1];
-                    } else {
-                        const easing = 1 - Math.pow(1 - speed, 2);
-                        const targetX = targetPositions[idx] * state.expansionFactor;
-                        const targetY = targetPositions[idx+1] * state.expansionFactor;
-                        const targetZ = targetPositions[idx+2] * state.expansionFactor;
-                        
-                        positionsArr[idx] += (targetX - positionsArr[idx]) * easing;
-                        positionsArr[idx+1] += (targetY - positionsArr[idx+1]) * easing;
-                        positionsArr[idx+2] += (targetZ - positionsArr[idx+2]) * easing;
-                        
-                        if (state.waveEffect) {
-                            positionsArr[idx+1] += Math.sin(frameCount * 0.05 + i * 0.01) * 2;
-                        }
-                    }
-
-                    if (state.mirrorMode) {
-                        positionsArr[idx] = -positionsArr[idx];
-                    }
-
-                    if (state.rainbowMode) {
-                        const hue = (frameCount * 0.0015 + i / CONFIG.particleCount) % 1;
-                        const color = new THREE.Color().setHSL(hue, 0.9, 0.5);
-                        colors[idx] = color.r; colors[idx+1] = color.g; colors[idx+2] = color.b;
-                    }
-                }
-                geometry.attributes.position.needsUpdate = true;
-                if (state.rainbowMode) {
-                    geometry.attributes.color.needsUpdate = true;
-                }
-
-                if (state.autoRotate) {
-                    particleSystem.rotation.y += 0.005;
-                    particleSystem.rotation.x += 0.002;
-                } else if (Math.abs(state.velocity) < 0.3) {
-                    state.targetRotation.y = state.hand.x * 0.002;
-                    state.targetRotation.x = -state.hand.y * 0.002;
-                    
-                    state.smoothRotation.y += (state.targetRotation.y - state.smoothRotation.y) * 0.1;
-                    state.smoothRotation.x += (state.targetRotation.x - state.smoothRotation.x) * 0.1;
-                    
-                    particleSystem.rotation.y += state.smoothRotation.y;
-                    particleSystem.rotation.x += state.smoothRotation.x;
-                }
-
-                if (state.pulsate) {
-                    particleSystem.scale.setScalar(1 + Math.sin(frameCount * 0.05) * 0.2);
-                } else {
-                    const targetScale = Math.max(0.5, Math.min(3.0, state.pinchDist * 10)); 
-                    particleSystem.scale.setScalar(particleSystem.scale.x + (targetScale - particleSystem.scale.x) * 0.15);
-                }
-            }
-
-            renderer.render(scene, camera);
-            frameCount++;
-        }
-
-        // Keyboard
-        window.addEventListener('keydown', (e) => {
-            switch(e.key.toLowerCase()) {
-                case 't':
-                    state.particleTrails = !state.particleTrails;
-                    updateFeatureDisplay('trails', state.particleTrails);
-                    showGestureFeedback(state.particleTrails ? '✨' : '⭕');
-                    break;
-                case 's':
-                    state.soundEnabled = !state.soundEnabled;
-                    updateFeatureDisplay('sound', state.soundEnabled);
-                    showGestureFeedback(state.soundEnabled ? '🔊' : '🔇');
-                    break;
-                case 'r':
-                    state.rainbowMode = !state.rainbowMode;
-                    updateFeatureDisplay('rainbow', state.rainbowMode);
-                    showGestureFeedback(state.rainbowMode ? '🌈' : '⭕');
-                    break;
-                case 'p':
-                    state.pulsate = !state.pulsate;
-                    updateFeatureDisplay('pulsate', state.pulsate);
-                    showGestureFeedback(state.pulsate ? '💓' : '⭕');
-                    break;
-                case 'c':
-                    takeScreenshot();
-                    break;
-                case 'w':
-                    state.warpSpeed = !state.warpSpeed;
-                    updateFeatureDisplay('warp', state.warpSpeed);
-                    showGestureFeedback(state.warpSpeed ? '🚀' : '⭕');
-                    break;
-            }
-        });
-
-        // Init
-        const videoElement = document.getElementById('video-input');
-        const hands = new Hands({
-            locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
-        });
-        
-        hands.setOptions({ 
-            maxNumHands: 2, 
-            modelComplexity: 1,
-            minDetectionConfidence: 0.7,
-            minTrackingConfidence: 0.6,
-            selfieMode: true
-        });
-        
-        hands.onResults(onResults);
-        
-        const cameraUtils = new Camera(videoElement, {
-            onFrame: async () => { await hands.send({image: videoElement}); },
-            width: 1280,
-            height: 720,
-            facingMode: 'user'
-        });
-        
-        cameraUtils.start().then(() => {
-            console.log('Camera started');
-            updateDetectionStatus(0);
-        }).catch(err => {
-            console.error('Camera error:', err);
-            document.getElementById('detection-text').textContent = '❌ Camera failed';
-        });
-        
-        animate();
-
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            trailCanvas.width = window.innerWidth;
-            trailCanvas.height = window.innerHeight;
-        });
-
-        updateAllFeatureDisplays();
-
-    </script>
+    <script src="app.js"></script>
 </body>
 </html>
